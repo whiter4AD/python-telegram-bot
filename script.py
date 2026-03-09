@@ -2,7 +2,7 @@ import logging
 import os
 import psycopg2
 from datetime import datetime
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, KeyboardButton
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes, MessageHandler, filters
 # Настройка логирования
 logging.basicConfig(
@@ -250,7 +250,7 @@ async def handle_contact(update: Update, _: ContextTypes.DEFAULT_TYPE):
 
 async def show_payment_details(update: Update, _: ContextTypes.DEFAULT_TYPE):
     text = (
-        f"💳 Реквизиты для оплаты:\n\n{PAYMENT_DETAILS['card']}\n{PAYMENT_DETAILS['phone']}\n"
+        f"💳 Реквизиты для оплаты:\n\n{PAYMENT_DETAILS['card']}\n"
         f"{PAYMENT_DETAILS['bank']}\n{PAYMENT_DETAILS['name']}\n{PAYMENT_DETAILS['trc20']}\n\n"
         "📌 После оплаты:\n1. Сохраните чек\n2. Напишите менеджеру: @SwagWhite"
     )
@@ -390,7 +390,7 @@ async def process_payment(update: Update, _: ContextTypes.DEFAULT_TYPE):
 
     text = (
         f"🧾 Заказ {order_id}\n\n💰 Сумма: {total}$\n\n💳 Реквизиты:\n\n"
-        f"{PAYMENT_DETAILS['card']}\n{PAYMENT_DETAILS['phone']}\n{PAYMENT_DETAILS['bank']}\n"
+        f"{PAYMENT_DETAILS['card']}\n{PAYMENT_DETAILS['bank']}\n"
         f"{PAYMENT_DETAILS['name']}\n{PAYMENT_DETAILS['trc20']}\n\n"
         "📌 После оплаты нажмите кнопку ниже и отправьте скриншот менеджеру."
     )

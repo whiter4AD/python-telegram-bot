@@ -601,7 +601,9 @@ def main():
     application.add_handler(CallbackQueryHandler(show_cart, pattern='^show_cart$'))
     application.add_handler(CallbackQueryHandler(clear_cart, pattern='^clear_cart$'))
     application.add_handler(CallbackQueryHandler(process_payment, pattern='^pay_'))
-    application.add_handler(CallbackQueryHandler(confirm_payment, pattern='^confirm_'))
+    # подтверждение оплаты: callback_data имеет вид confirm_#userId_N, поэтому добавляем #,
+    # чтобы не перехватывать другие confirm_* (например, confirm_broadcast)
+    application.add_handler(CallbackQueryHandler(confirm_payment, pattern='^confirm_#'))
     application.add_handler(CallbackQueryHandler(show_payment_details, pattern='^show_payment$'))
     application.add_handler(CallbackQueryHandler(handle_contact, pattern='^contact$'))
     application.add_handler(CallbackQueryHandler(main_menu, pattern='^main_menu$'))

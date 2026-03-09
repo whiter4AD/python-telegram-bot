@@ -2,9 +2,8 @@ import logging
 import os
 import psycopg2
 from datetime import datetime
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, KeyboardButton
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes, MessageHandler, filters
-
 # Настройка логирования
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -25,7 +24,7 @@ PAYMENT_DETAILS = {
     'phone': '📱 Номер телефона: +7 (993) 135-87-17',
     'bank': '🏦 Банк: ЮMoney',
     'name': '👤 Получатель: Ложкин Анатолий Юрьевич',
-    'trc20': '💲trc20: TSaT6oPw8MCtcnWQGZyv9s3TMidatnUi5d',
+    'trc20': '🪙 trc20: TSaT6oPw8MCtcnWQGZyv9s3TMidatnUi5d',
 }
 
 # База данных товаров
@@ -55,21 +54,21 @@ PRODUCTS = {
     '🔥 Turkey': {
         'name': '🔥 Turkey',
         'items': {
-            'OnMobil': {'name': 'OnMobil Bank', 'price': 135, 'desc': 'Карта данного банка, без eSim'},
-            'lussi Wallet': {'name': 'Luziko Bank', 'price': 90, 'desc': 'Карта данного банка, без eSim'},
-            'Hadi': {'name': 'не вериф Hadi Bank', 'price': 13, 'desc': 'Карта данного банка без eSim'},
-            'Sipay Verifed': {'name': 'Sipay Verifed Bank', 'price': 90, 'desc': 'Карта данного банка, без eSim'},
-            'Turan': {'name': 'Turan Bank', 'price': 95, 'desc': 'Карта данного банка, без eSim'},
-            'Moneytolia': {'name': 'Moneytolia Bank', 'price': 95, 'desc': 'Карта данного банка, без eSim'},
-            'Fups Prem': {'name': 'Fups Prem Bank', 'price': 100, 'desc': 'Карта данного банка, без eSim'},
-            'Uption': {'name': 'Uption Bank', 'price': 120, 'desc': 'Карта данного банка, без eSim'},
-            'AhlPay': {'name': 'AhlPay Bank', 'price': 120, 'desc': 'Карта данного банка, без eSim'},
-            'HayHay': {'name': 'HayHay Bank', 'price': 120, 'desc': 'Карта данного банка, без eSim'},
+            'OnMobil': {'name': 'OnMobil Bank', 'price': 135, 'desc': 'Карта данного банка'},
+            'lussi Wallet': {'name': 'Luziko Bank', 'price': 90, 'desc': 'Карта данного банка'},
+            'Hadi': {'name': 'не вериф Hadi Bank', 'price': 13, 'desc': 'Карта данного банка'},
+            'Sipay Verifed': {'name': 'Sipay Verifed Bank', 'price': 90, 'desc': 'Карта данного банка'},
+            'Turan': {'name': 'Turan Bank', 'price': 95, 'desc': 'Карта данного банка'},
+            'Moneytolia': {'name': 'Moneytolia Bank', 'price': 95, 'desc': 'Карта данного банка'},
+            'Fups Prem': {'name': 'Fups Prem Bank', 'price': 100, 'desc': 'Карта данного банка'},
+            'Uption': {'name': 'Uption Bank', 'price': 120, 'desc': 'Карта данного банка'},
+            'AhlPay': {'name': 'AhlPay Bank', 'price': 120, 'desc': 'Карта данного банка'},
+            'HayHay': {'name': 'HayHay Bank', 'price': 120, 'desc': 'Карта данного банка'},
             'eSim Turkcell/VodaFone': {'name': 'eSim', 'price': 100, 'desc': 'Turkey eSim'},
         }
     },
-    '💲 Crypto exchanges': {
-        'name': '💲 Верификация',
+    '🪙 Crypto exchanges': {
+        'name': '🪙 Верификация',
         'items': {
             'Bybit': {'name': 'Bybit 2lvl + card', 'price': 45, 'desc': 'Верификация'},
             'OKX': {'name': 'OKX', 'price': 25, 'desc': 'Верификация'},
@@ -77,16 +76,9 @@ PRODUCTS = {
             'Fragment': {'name': 'Fragment', 'price': 25, 'desc': 'Верификация'},
             'Binance': {'name': 'Binance', 'price': 25, 'desc': 'Верификация'},
             'HTX': {'name': 'HTX', 'price': 25, 'desc': 'Верификация'},
-        }
-    },
-    '👾 Ukraine': {
-        'name': '👾 Ukraine',
-        'items': {
-            'A-Bank': {'name': 'A-Bank', 'price': 90, 'desc': 'Карта данного банка, без eSim'},
-            'IziBank': {'name': 'IziBank', 'price': 90, 'desc': 'Карта данного банка, без eSim'},
-            'SenseBank': {'name': 'SenseBank', 'price': 90, 'desc': 'Карта данного банка, без eSim'},
-            'Pumb Online': {'name': 'Pumb Online Bank', 'price': 90, 'desc': 'Карта данного банка, без eSim'},
-            'eSim LifeCell/KievStar': {'name': 'eSim', 'price': 100, 'desc': 'Ukraine eSim'},
+            'BetBoom': {'name': 'BetBoom', 'price': 25, 'desc': 'Верификация'},
+            'Faceit': {'name': 'Faceit', 'price': 15, 'desc': 'Верификация'},
+            'Cryptobot': {'name': 'Cryptobot', 'price': 20, 'desc': 'Верификация'}
         }
     },
     '🎯 India': {
@@ -104,17 +96,17 @@ PRODUCTS = {
     '🍩 Nigeria': {
         'name': '🍩 Nigeria',
         'items': {
-            'Kuda': {'name': 'Kuda Bank', 'price': 3800, 'desc': 'Карта данного банка, ЦЕНА В РУБЛЯХ'},
-            'Moniepoint': {'name': 'Moniepoint Bank', 'price': 6400, 'desc': 'Карта данного банка, ЦЕНА В РУБЛЯХ'},
-            'Paga USD': {'name': 'Paga USD Bank', 'price': 4200, 'desc': 'Карта данного банка, ЦЕНА В РУБЛЯХ'},
-            'Opay': {'name': 'Opay Bank', 'price': 10000, 'desc': 'Карта данного банка, ЦЕНА В РУБЛЯХ'},
-            'Chipper Cash': {'name': 'Chipper Cash Bank', 'price': 3800, 'desc': 'Карта данного банка, ЦЕНА В РУБЛЯХ'},
-            'Go Money': {'name': 'Go Money Bank', 'price': 3800, 'desc': 'Карта данного банка, ЦЕНА В РУБЛЯХ'},
-            'Timon': {'name': 'Timon Bank', 'price': 5500, 'desc': 'Карта данного банка, ЦЕНА В РУБЛЯХ'},
-            'Alt': {'name': 'Alt Bank', 'price': 5500, 'desc': 'Карта данного банка, ЦЕНА В РУБЛЯХ'},
-            'First': {'name': 'First Bank', 'price': 10000, 'desc': 'Карта данного банка, ЦЕНА В РУБЛЯХ'},
-            'Access More': {'name': 'Access More Bank', 'price': 10000, 'desc': 'Карта данного банка, ЦЕНА В РУБЛЯХ'},
-            'eSim MTN': {'name': 'eSim', 'price': 2200, 'desc': 'Nigeria eSim, ЦЕНА В РУБЛЯХ'},
+            'Kuda': {'name': 'Kuda Bank', 'price': 50, 'desc': 'Карта данного банка'},
+            'Moniepoint': {'name': 'Moniepoint Bank', 'price': 85, 'desc': 'Карта данного банка'},
+            'Paga USD': {'name': 'Paga USD Bank', 'price': 55, 'desc': 'Карта данного банка'},
+            'Opay': {'name': 'Opay Bank', 'price': 125, 'desc': 'Карта данного банка'},
+            'Chipper Cash': {'name': 'Chipper Cash Bank', 'price': 50, 'desc': 'Карта данного банка'},
+            'Go Money': {'name': 'Go Money Bank', 'price': 50, 'desc': 'Карта данного банка'},
+            'Timon': {'name': 'Timon Bank', 'price': 70, 'desc': 'Карта данного банка'},
+            'Alt': {'name': 'Alt Bank', 'price': 70, 'desc': 'Карта данного банка'},
+            'First': {'name': 'First Bank', 'price': 125, 'desc': 'Карта данного банка'},
+            'Access More': {'name': 'Access More Bank', 'price': 125, 'desc': 'Карта данного банка'},
+            'eSim MTN': {'name': 'eSim', 'price': 30, 'desc': 'Nigeria eSim'},
         }
     }
 }
@@ -123,6 +115,15 @@ PRODUCTS = {
 carts = {}
 orders = {}
 user_consent = {}
+
+
+def get_main_keyboard():
+    buttons = [
+        [KeyboardButton('📋 Каталог'), KeyboardButton('🛒 Корзина')],
+        [KeyboardButton('💳 Реквизиты'), KeyboardButton('❓ Помощь')],
+        [KeyboardButton('📞 Контакты')],
+    ]
+    return ReplyKeyboardMarkup(buttons, resize_keyboard=True)
 
 
 # ── База данных ───────────────────────────────────────────────────
@@ -209,7 +210,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(
             f"👋 Привет, {user.first_name}!\n\nДоступные команды:\n"
             "/catalog - 📋 Каталог\n/cart - 🛒 Корзина\n/payment - 💳 Реквизиты\n/help - ❓ Помощь\n/contact - 📞 Контакты"
-        )
+        , reply_markup=get_main_keyboard())
 
 
 async def accept_terms(update: Update, _: ContextTypes.DEFAULT_TYPE):
@@ -221,18 +222,21 @@ async def accept_terms(update: Update, _: ContextTypes.DEFAULT_TYPE):
         f"✅ Условия приняты.\n\n👋 Привет, {user.first_name}!\n\n"
         "/catalog - 📋 Каталог\n/cart - 🛒 Корзина\n/payment - 💳 Реквизиты\n/help - ❓ Помощь\n/contact - 📞 Контакты"
     )
+    # Отправляем отдельным сообщением главное меню с постоянной клавиатурой
+    await query.message.reply_text("🏠 Главное меню:", reply_markup=get_main_keyboard())
 
 
 async def help_command(update: Update, _: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         "❓ Помощь:\n\n1. /catalog - каталог товаров\n2. Выберите категорию и товар\n"
         "3. Добавьте в корзину\n4. /cart - проверьте корзину\n5. Оплатите и отправьте скриншот менеджеру\n\n/contact - контакты"
-    )
+    , reply_markup=get_main_keyboard())
 
 
 async def contact(update: Update, _: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "📞 Контакты:\n\nEmail: darkstoreofficial@duck.com\nTelegram: @SwagWhite\n\nРежим работы: Пн-Вс 10:00 - 22:00 мск"
+        "📞 Контакты:\n\nEmail: darkstoreofficial@duck.com\nTelegram: @SwagWhite\n\nРежим работы: Пн-Вс 10:00 - 22:00 мск",
+        reply_markup=get_main_keyboard()
     )
 
 
@@ -572,7 +576,8 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def handle_all_messages(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if context.user_data.get('awaiting_broadcast'):
+    # Обрабатываем только сообщения админа и только в режиме ожидания текста рассылки
+    if update.effective_user and update.effective_user.id == ADMIN_ID and context.user_data.get('awaiting_broadcast'):
         await handle_broadcast_message(update, context)
 
 
@@ -608,7 +613,14 @@ def main():
     application.add_handler(CallbackQueryHandler(confirm_broadcast, pattern='^confirm_broadcast$'))
     application.add_handler(CallbackQueryHandler(cancel_broadcast, pattern='^cancel_broadcast$'))
     application.add_handler(CallbackQueryHandler(back_to_admin, pattern='^back_to_admin$'))
-    application.add_handler(MessageHandler(filters.TEXT | filters.PHOTO | filters.VIDEO | filters.Document.ALL, handle_all_messages))
+    # Текстовые кнопки главного меню (без слеша)
+    application.add_handler(MessageHandler(filters.TEXT & filters.Regex('^📋 Каталог$'), catalog))
+    application.add_handler(MessageHandler(filters.TEXT & filters.Regex('^🛒 Корзина$'), show_cart))
+    application.add_handler(MessageHandler(filters.TEXT & filters.Regex('^💳 Реквизиты$'), show_payment_details))
+    application.add_handler(MessageHandler(filters.TEXT & filters.Regex('^❓ Помощь$'), help_command))
+    application.add_handler(MessageHandler(filters.TEXT & filters.Regex('^📞 Контакты$'), contact))
+    # Хендлер для сообщений, используемых в режиме рассылки (любой тип, кроме команд)
+    application.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, handle_all_messages))
 
     print("Бот запущен...")
     application.run_polling(allowed_updates=Update.ALL_TYPES)

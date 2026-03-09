@@ -2,7 +2,7 @@ import logging
 import os
 import psycopg2
 from datetime import datetime
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, KeyboardButton
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes, MessageHandler, filters
 # Настройка логирования
 logging.basicConfig(
@@ -77,7 +77,7 @@ PRODUCTS = {
             'HTX': {'name': 'HTX', 'price': 25, 'desc': 'Верификация'},
             'BetBoom': {'name': 'BetBoom', 'price': 25, 'desc': 'Верификация'},
             'Faceit': {'name': 'Faceit', 'price': 15, 'desc': 'Верификация'},
-            'Cryptobot': {'name': 'Cryptobot', 'price': 20, 'desc': 'Верификация'}
+            'Cryptobot': {'name': 'Cryptobot', 'price': 20, 'desc': 'Верификация'},
         }
     },
     '🎯 India': {

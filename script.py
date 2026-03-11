@@ -1,7 +1,7 @@
 import logging
 import os
 import psycopg2
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, KeyboardButton
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes, MessageHandler, filters
 # Настройка логирования
@@ -17,6 +17,9 @@ DATABASE_URL = os.getenv('DATABASE_URL')
 
 # ID администратора
 ADMIN_ID = 7259238503
+
+# Часовой пояс бота (GMT+5)
+BOT_TZ = timezone(timedelta(hours=5))
 
 # Реквизиты для оплаты
 PAYMENT_DETAILS = {
@@ -142,6 +145,11 @@ def init_database():
             joined_date TEXT
         )
     ''')
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS blocked_users (
+            user_id BIGINT PRIMARY KEY
+        )
+    ''')
     conn.commit()
     conn.close()
 
@@ -154,7 +162,7 @@ def add_user_to_db(user_id, username, first_name):
             INSERT INTO users (user_id, username, first_name, joined_date)
             VALUES (%s, %s, %s, %s)
             ON CONFLICT (user_id) DO NOTHING
-        ''', (user_id, username, first_name, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+        ''', (user_id, username, first_name, datetime.now(BOT_TZ).strftime("%Y-%m-%d %H:%M:%S")))
         conn.commit()
     except Exception as e:
         print(f"Ошибка при добавлении пользователя: {e}")
@@ -189,9 +197,61 @@ def get_recent_users(limit=10):
     return users
 
 
+def block_user_db(user_id: int):
+    conn = get_conn()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            "INSERT INTO blocked_users (user_id) VALUES (%s) ON CONFLICT (user_id) DO NOTHING",
+            (user_id,),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def unblock_user_db(user_id: int):
+    conn = get_conn()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("DELETE FROM blocked_users WHERE user_id = %s", (user_id,))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def is_user_blocked(user_id: int) -> bool:
+    conn = get_conn()
+    cursor = conn.cursor()
+    cursor.execute("SELECT 1 FROM blocked_users WHERE user_id = %s", (user_id,))
+    res = cursor.fetchone()
+    conn.close()
+    return res is not None
+
+
+async def check_blocked(update: Update) -> bool:
+    """Проверяем, заблокирован ли пользователь. Если да — сообщаем и возвращаем True."""
+    user = update.effective_user
+    if not user:
+        return False
+    if user.id == ADMIN_ID:
+        return False
+
+    if not is_user_blocked(user.id):
+        return False
+
+    if update.callback_query:
+        await update.callback_query.answer("⛔ Доступ к боту ограничен.", show_alert=True)
+    elif update.message:
+        await update.message.reply_text("⛔ Доступ к боту ограничен.")
+    return True
+
+
 # ── Хендлеры ─────────────────────────────────────────────────────
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if await check_blocked(update):
+        return
     user = update.effective_user
     add_user_to_db(user.id, user.username, user.first_name)
 
@@ -213,6 +273,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def accept_terms(update: Update, _: ContextTypes.DEFAULT_TYPE):
+    if await check_blocked(update):
+        return
     query = update.callback_query
     await query.answer()
     user = query.from_user
@@ -226,6 +288,8 @@ async def accept_terms(update: Update, _: ContextTypes.DEFAULT_TYPE):
 
 
 async def help_command(update: Update, _: ContextTypes.DEFAULT_TYPE):
+    if await check_blocked(update):
+        return
     await update.message.reply_text(
         "❓ Помощь:\n\n1. /catalog - каталог товаров\n2. Выберите категорию и товар\n"
         "3. Добавьте в корзину\n4. /cart - проверьте корзину\n5. Оплатите и отправьте скриншот менеджеру\n\n/contact - контакты"
@@ -233,6 +297,8 @@ async def help_command(update: Update, _: ContextTypes.DEFAULT_TYPE):
 
 
 async def contact(update: Update, _: ContextTypes.DEFAULT_TYPE):
+    if await check_blocked(update):
+        return
     await update.message.reply_text(
         "📞 Контакты:\n\nEmail: darkstoreofficial@duck.com\nTelegram: @SwagWhite\n\nРежим работы: Пн-Вс 10:00 - 22:00 мск",
         reply_markup=get_main_keyboard()
@@ -240,6 +306,8 @@ async def contact(update: Update, _: ContextTypes.DEFAULT_TYPE):
 
 
 async def handle_contact(update: Update, _: ContextTypes.DEFAULT_TYPE):
+    if await check_blocked(update):
+        return
     query = update.callback_query
     await query.answer()
     await query.edit_message_text(
@@ -249,6 +317,8 @@ async def handle_contact(update: Update, _: ContextTypes.DEFAULT_TYPE):
 
 
 async def show_payment_details(update: Update, _: ContextTypes.DEFAULT_TYPE):
+    if await check_blocked(update):
+        return
     text = (
         f"💳 Реквизиты для оплаты:\n\n{PAYMENT_DETAILS['card']}\n"
         f"{PAYMENT_DETAILS['bank']}\n{PAYMENT_DETAILS['name']}\n{PAYMENT_DETAILS['trc20']}\n\n"
@@ -266,11 +336,15 @@ async def show_payment_details(update: Update, _: ContextTypes.DEFAULT_TYPE):
 
 
 async def catalog(update: Update, _: ContextTypes.DEFAULT_TYPE):
+    if await check_blocked(update):
+        return
     keyboard = [[InlineKeyboardButton(v['name'], callback_data=f'category_{k}')] for k, v in PRODUCTS.items()]
     await update.message.reply_text("📋 Выберите категорию:", reply_markup=InlineKeyboardMarkup(keyboard))
 
 
 async def show_catalog(update: Update, _: ContextTypes.DEFAULT_TYPE):
+    if await check_blocked(update):
+        return
     query = update.callback_query
     await query.answer()
     keyboard = [[InlineKeyboardButton(v['name'], callback_data=f'category_{k}')] for k, v in PRODUCTS.items()]
@@ -278,6 +352,8 @@ async def show_catalog(update: Update, _: ContextTypes.DEFAULT_TYPE):
 
 
 async def back_to_catalog(update: Update, _: ContextTypes.DEFAULT_TYPE):
+    if await check_blocked(update):
+        return
     query = update.callback_query
     await query.answer()
     keyboard = [[InlineKeyboardButton(v['name'], callback_data=f'category_{k}')] for k, v in PRODUCTS.items()]
@@ -285,6 +361,8 @@ async def back_to_catalog(update: Update, _: ContextTypes.DEFAULT_TYPE):
 
 
 async def show_category(update: Update, _: ContextTypes.DEFAULT_TYPE):
+    if await check_blocked(update):
+        return
     query = update.callback_query
     await query.answer()
     category_id = query.data.replace('category_', '')
@@ -298,6 +376,8 @@ async def show_category(update: Update, _: ContextTypes.DEFAULT_TYPE):
 
 
 async def show_item(update: Update, _: ContextTypes.DEFAULT_TYPE):
+    if await check_blocked(update):
+        return
     query = update.callback_query
     await query.answer()
     _, category_id, item_id = query.data.split('_', 2)
@@ -314,6 +394,8 @@ async def show_item(update: Update, _: ContextTypes.DEFAULT_TYPE):
 
 
 async def add_to_cart(update: Update, _: ContextTypes.DEFAULT_TYPE):
+    if await check_blocked(update):
+        return
     query = update.callback_query
     await query.answer()
     user_id = query.from_user.id
@@ -331,6 +413,8 @@ async def add_to_cart(update: Update, _: ContextTypes.DEFAULT_TYPE):
 
 
 async def show_cart(update: Update, _: ContextTypes.DEFAULT_TYPE):
+    if await check_blocked(update):
+        return
     query = update.callback_query
     if query:
         await query.answer()
@@ -365,6 +449,8 @@ async def show_cart(update: Update, _: ContextTypes.DEFAULT_TYPE):
 
 
 async def clear_cart(update: Update, _: ContextTypes.DEFAULT_TYPE):
+    if await check_blocked(update):
+        return
     query = update.callback_query
     await query.answer()
     carts[query.from_user.id] = []
@@ -375,6 +461,8 @@ async def clear_cart(update: Update, _: ContextTypes.DEFAULT_TYPE):
 
 
 async def process_payment(update: Update, _: ContextTypes.DEFAULT_TYPE):
+    if await check_blocked(update):
+        return
     query = update.callback_query
     await query.answer()
     user_id = query.from_user.id
@@ -403,6 +491,8 @@ async def process_payment(update: Update, _: ContextTypes.DEFAULT_TYPE):
 
 
 async def confirm_payment(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if await check_blocked(update):
+        return
     query = update.callback_query
     await query.answer()
     _, order_id = query.data.split('_', 1)
@@ -437,6 +527,8 @@ async def confirm_payment(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def main_menu(update: Update, _: ContextTypes.DEFAULT_TYPE):
+    if await check_blocked(update):
+        return
     query = update.callback_query
     await query.answer()
     keyboard = [
@@ -456,6 +548,7 @@ async def admin_panel(update: Update, _: ContextTypes.DEFAULT_TYPE):
         [InlineKeyboardButton("📊 Статистика", callback_data='admin_stats')],
         [InlineKeyboardButton("📢 Рассылка", callback_data='admin_broadcast')],
         [InlineKeyboardButton("👥 Пользователи", callback_data='admin_users')],
+        [InlineKeyboardButton("🚫 Блокировка", callback_data='admin_block_menu')],
     ]
     await update.message.reply_text("🔐 Админ панель:", reply_markup=InlineKeyboardMarkup(keyboard), parse_mode='Markdown')
 
@@ -468,7 +561,7 @@ async def admin_stats(update: Update, _: ContextTypes.DEFAULT_TYPE):
         return
     total = get_total_users()
     await query.edit_message_text(
-        f"📊 Статистика\n\n👥 Всего пользователей: {total}\n📅 {datetime.now().strftime('%d.%m.%Y %H:%M')}",
+        f"📊 Статистика\n\n👥 Всего пользователей: {total}\n📅 {datetime.now(BOT_TZ).strftime('%d.%m.%Y %H:%M')}",
         reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("◀️ Назад", callback_data='back_to_admin')]])
     )
 
@@ -555,6 +648,56 @@ async def admin_users_list(update: Update, _: ContextTypes.DEFAULT_TYPE):
     )
 
 
+async def admin_block_menu(update: Update, _: ContextTypes.DEFAULT_TYPE):
+    """Небольшая подсказка по блокировке пользователей."""
+    query = update.callback_query
+    await query.answer()
+    if query.from_user.id != ADMIN_ID:
+        return
+    text = (
+        "🚫 Блокировка пользователей\n\n"
+        "Используйте команды:\n"
+        "/block <user_id> — заблокировать пользователя\n"
+        "/unblock <user_id> — разблокировать пользователя"
+    )
+    await query.edit_message_text(
+        text,
+        reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("◀️ Назад", callback_data='back_to_admin')]])
+    )
+
+
+async def block_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.effective_user.id != ADMIN_ID:
+        await update.message.reply_text("⛔ Нет доступа.")
+        return
+    if not context.args:
+        await update.message.reply_text("ℹ️ Использование: /block <user_id>")
+        return
+    try:
+        target_id = int(context.args[0])
+    except ValueError:
+        await update.message.reply_text("❌ ID пользователя должен быть числом.")
+        return
+    block_user_db(target_id)
+    await update.message.reply_text(f"🚫 Пользователь {target_id} заблокирован.")
+
+
+async def unblock_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.effective_user.id != ADMIN_ID:
+        await update.message.reply_text("⛔ Нет доступа.")
+        return
+    if not context.args:
+        await update.message.reply_text("ℹ️ Использование: /unblock <user_id>")
+        return
+    try:
+        target_id = int(context.args[0])
+    except ValueError:
+        await update.message.reply_text("❌ ID пользователя должен быть числом.")
+        return
+    unblock_user_db(target_id)
+    await update.message.reply_text(f"✅ Пользователь {target_id} разблокирован.")
+
+
 async def back_to_admin(update: Update, _: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -591,6 +734,8 @@ def main():
     application.add_handler(CommandHandler("cart", show_cart))
     application.add_handler(CommandHandler("payment", show_payment_details))
     application.add_handler(CommandHandler("admin", admin_panel))
+    application.add_handler(CommandHandler("block", block_user))
+    application.add_handler(CommandHandler("unblock", unblock_user))
     application.add_handler(CommandHandler("cancel", cancel))
 
     application.add_handler(CallbackQueryHandler(accept_terms, pattern='^accept_terms$'))
@@ -611,6 +756,7 @@ def main():
     application.add_handler(CallbackQueryHandler(admin_stats, pattern='^admin_stats$'))
     application.add_handler(CallbackQueryHandler(admin_broadcast_start, pattern='^admin_broadcast$'))
     application.add_handler(CallbackQueryHandler(admin_users_list, pattern='^admin_users$'))
+    application.add_handler(CallbackQueryHandler(admin_block_menu, pattern='^admin_block_menu$'))
     application.add_handler(CallbackQueryHandler(confirm_broadcast, pattern='^confirm_broadcast$'))
     application.add_handler(CallbackQueryHandler(cancel_broadcast, pattern='^cancel_broadcast$'))
     application.add_handler(CallbackQueryHandler(back_to_admin, pattern='^back_to_admin$'))

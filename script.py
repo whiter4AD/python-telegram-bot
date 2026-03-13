@@ -128,7 +128,7 @@ def get_main_keyboard():
     buttons = [
         [KeyboardButton('📋 Каталог'), KeyboardButton('🛒 Корзина')],
         [KeyboardButton('💳 Реквизиты'), KeyboardButton('❓ Помощь')],
-        [KeyboardButton('📞 Контакты')],
+        [KeyboardButton('📞 Контакты'), KeyboardButton('👥 Рефералка')],
     ]
     return ReplyKeyboardMarkup(buttons, resize_keyboard=True)
 
@@ -351,8 +351,14 @@ async def help_command(update: Update, _: ContextTypes.DEFAULT_TYPE):
     if await check_blocked(update):
         return
     await update.message.reply_text(
-        "❓ Помощь:\n\n1. /catalog - каталог товаров\n2. Выберите категорию и товар\n"
-        "3. Добавьте в корзину\n4. /cart - проверьте корзину\n5. Оплатите и отправьте скриншот менеджеру\n\n/contact - контакты"
+        "❓ Помощь:\n\n"
+        "1. /catalog - каталог товаров\n"
+        "2. Выберите категорию и товар\n"
+        "3. Добавьте в корзину\n"
+        "4. /cart - проверьте корзину\n"
+        "5. Оплатите и отправьте скриншот менеджеру\n\n"
+        "/contact - контакты\n"
+        "/ref - партнёрская программа и ваша реферальная ссылка"
     , reply_markup=get_main_keyboard())
 
 
@@ -853,6 +859,7 @@ def main():
     application.add_handler(MessageHandler(filters.TEXT & filters.Regex('^💳 Реквизиты$'), show_payment_details))
     application.add_handler(MessageHandler(filters.TEXT & filters.Regex('^❓ Помощь$'), help_command))
     application.add_handler(MessageHandler(filters.TEXT & filters.Regex('^📞 Контакты$'), contact))
+    application.add_handler(MessageHandler(filters.TEXT & filters.Regex('^👥 Рефералка$'), referral_info))
     # Хендлер для сообщений, используемых в режиме рассылки (любой тип, кроме команд)
     application.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, handle_all_messages))
 

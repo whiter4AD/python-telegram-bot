@@ -16,7 +16,7 @@ BOT_TOKEN = os.getenv('BOT_TOKEN')
 DATABASE_URL = os.getenv('DATABASE_URL')
 
 # ID администратора
-ADMIN_ID = 7259238503
+ADMIN_ID = 7259238503, 1326194972
 
 # Часовой пояс бота (GMT+5)
 BOT_TZ = timezone(timedelta(hours=5))

@@ -15,11 +15,15 @@ logger = logging.getLogger(__name__)
 BOT_TOKEN = os.getenv('BOT_TOKEN')
 DATABASE_URL = os.getenv('DATABASE_URL')
 
-# ID администратора
-ADMIN_ID = 7259238503, 1326194972
+# ID администраторов
+ADMIN_IDS = {7259238503, 1326194972}
 
 # Часовой пояс бота (GMT+5)
 BOT_TZ = timezone(timedelta(hours=5))
+
+
+def is_admin(user_id: int) -> bool:
+    return user_id in ADMIN_IDS
 
 # Реквизиты для оплаты
 PAYMENT_DETAILS = {
@@ -234,7 +238,7 @@ async def check_blocked(update: Update) -> bool:
     user = update.effective_user
     if not user:
         return False
-    if user.id == ADMIN_ID:
+    if is_admin(user.id):
         return False
 
     if not is_user_blocked(user.id):
@@ -509,10 +513,11 @@ async def confirm_payment(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
     try:
-        await context.bot.send_message(
-            chat_id=ADMIN_ID,
-            text=f"🔔 Новая оплата!\n\nЗаказ: {order_id}\nПользователь: @{query.from_user.username} (ID: {user_id})\nСумма: {orders[order_id]['total_price']}$\n\nТовары:\n{items_text}"
-        )
+        for admin_id in ADMIN_IDS:
+            await context.bot.send_message(
+                chat_id=admin_id,
+                text=f"🔔 Новая оплата!\n\nЗаказ: {order_id}\nПользователь: @{query.from_user.username} (ID: {user_id})\nСумма: {orders[order_id]['total_price']}$\n\nТовары:\n{items_text}"
+            )
     except Exception:
         logger.warning("Не удалось отправить уведомление менеджеру")
 
@@ -541,7 +546,7 @@ async def main_menu(update: Update, _: ContextTypes.DEFAULT_TYPE):
 
 
 async def admin_panel(update: Update, _: ContextTypes.DEFAULT_TYPE):
-    if update.effective_user.id != ADMIN_ID:
+    if not is_admin(update.effective_user.id):
         await update.message.reply_text("⛔ Нет доступа.")
         return
     keyboard = [
@@ -556,7 +561,7 @@ async def admin_panel(update: Update, _: ContextTypes.DEFAULT_TYPE):
 async def admin_stats(update: Update, _: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
-    if query.from_user.id != ADMIN_ID:
+    if not is_admin(query.from_user.id):
         await query.edit_message_text("⛔ Доступ запрещен.")
         return
     total = get_total_users()
@@ -569,14 +574,14 @@ async def admin_stats(update: Update, _: ContextTypes.DEFAULT_TYPE):
 async def admin_broadcast_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
-    if query.from_user.id != ADMIN_ID:
+    if not is_admin(query.from_user.id):
         return
     context.user_data['awaiting_broadcast'] = True
     await query.edit_message_text("📢 Режим рассылки\n\nОтправь сообщение для рассылки. Для отмены: /cancel")
 
 
 async def handle_broadcast_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.effective_user.id != ADMIN_ID or not context.user_data.get('awaiting_broadcast'):
+    if not is_admin(update.effective_user.id) or not context.user_data.get('awaiting_broadcast'):
         return
     users = get_all_user_ids()
     context.user_data['broadcast_message'] = {
@@ -600,7 +605,7 @@ async def handle_broadcast_message(update: Update, context: ContextTypes.DEFAULT
 async def confirm_broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
-    if query.from_user.id != ADMIN_ID:
+    if not is_admin(query.from_user.id):
         return
     await query.edit_message_text("⏳ Рассылка начата...")
     users = get_all_user_ids()
@@ -636,7 +641,7 @@ async def cancel_broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def admin_users_list(update: Update, _: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
-    if query.from_user.id != ADMIN_ID:
+    if not is_admin(query.from_user.id):
         return
     users = get_recent_users()
     text = "👥 Последние 10 пользователей:\n\n"
@@ -652,7 +657,7 @@ async def admin_block_menu(update: Update, _: ContextTypes.DEFAULT_TYPE):
     """Небольшая подсказка по блокировке пользователей."""
     query = update.callback_query
     await query.answer()
-    if query.from_user.id != ADMIN_ID:
+    if not is_admin(query.from_user.id):
         return
     text = (
         "🚫 Блокировка пользователей\n\n"
@@ -667,7 +672,7 @@ async def admin_block_menu(update: Update, _: ContextTypes.DEFAULT_TYPE):
 
 
 async def block_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.effective_user.id != ADMIN_ID:
+    if not is_admin(update.effective_user.id):
         await update.message.reply_text("⛔ Нет доступа.")
         return
     if not context.args:
@@ -683,7 +688,7 @@ async def block_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def unblock_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.effective_user.id != ADMIN_ID:
+    if not is_admin(update.effective_user.id):
         await update.message.reply_text("⛔ Нет доступа.")
         return
     if not context.args:
@@ -719,7 +724,7 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def handle_all_messages(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Обрабатываем только сообщения админа и только в режиме ожидания текста рассылки
-    if update.effective_user and update.effective_user.id == ADMIN_ID and context.user_data.get('awaiting_broadcast'):
+    if update.effective_user and is_admin(update.effective_user.id) and context.user_data.get('awaiting_broadcast'):
         await handle_broadcast_message(update, context)
 
 

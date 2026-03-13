@@ -29,15 +29,13 @@ def is_admin(user_id: int) -> bool:
 # Реквизиты для оплаты
 PAYMENT_DETAILS = {
     'card': '💳 Номер карты: 2204 1201 2909 5465',
-    'bank': '🏦 Банк: ЮMoney',
-    'name': '👤 Получатель: Ложкин Анатолий Юрьевич',
     'trc20': '🪙 trc20: TSaT6oPw8MCtcnWQGZyv9s3TMidatnUi5d',
 }
 
 # База данных товаров
 PRODUCTS = {
     '📱 Argentina': {
-        'name': '📱 Argentina',
+        'name': '📱 Аргентина',
         'items': {
             'Personal': {'name': 'Personal Bank', 'price': 65, 'desc': 'Карта данного банка'},
             'Ripio': {'name': 'Ripio Bank', 'price': 65, 'desc': 'Карта данного банка'},
@@ -59,7 +57,7 @@ PRODUCTS = {
         }
     },
     '🔥 Turkey': {
-        'name': '🔥 Turkey',
+        'name': '🔥 Турция',
         'items': {
             'OnMobil': {'name': 'OnMobil Bank', 'price': 135, 'desc': 'Карта данного банка'},
             'lussi Wallet': {'name': 'Luziko Bank', 'price': 90, 'desc': 'Карта данного банка'},
@@ -89,7 +87,7 @@ PRODUCTS = {
         }
     },
     '🎯 India': {
-        'name': '🎯 India',
+        'name': '🎯 Индия',
         'items': {
             'Slice': {'name': 'Slice Bank', 'price': 270, 'desc': 'Карта данного банка'},
             'Airtel Payment': {'name': 'Airtel Payment Bank', 'price': 185, 'desc': 'Карта данного банка'},
@@ -101,7 +99,7 @@ PRODUCTS = {
         }
     },
     '🍩 Nigeria': {
-        'name': '🍩 Nigeria',
+        'name': '🍩 Нигерия',
         'items': {
             'Kuda': {'name': 'Kuda Bank', 'price': 50, 'desc': 'Карта данного банка'},
             'Moniepoint': {'name': 'Moniepoint Bank', 'price': 85, 'desc': 'Карта данного банка'},
@@ -115,7 +113,7 @@ PRODUCTS = {
             'Access More': {'name': 'Access More Bank', 'price': 125, 'desc': 'Карта данного банка'},
             'eSim MTN': {'name': 'eSim', 'price': 30, 'desc': 'Nigeria eSim'},
         }
-    }
+    },
 }
 
 # Корзина и заказы (в памяти)
@@ -386,8 +384,9 @@ async def show_payment_details(update: Update, _: ContextTypes.DEFAULT_TYPE):
     if await check_blocked(update):
         return
     text = (
-        f"💳 Реквизиты для оплаты:\n\n{PAYMENT_DETAILS['card']}\n"
-        f"{PAYMENT_DETAILS['bank']}\n{PAYMENT_DETAILS['name']}\n{PAYMENT_DETAILS['trc20']}\n\n"
+        f"💳 Реквизиты для оплаты:\n\n"
+        f"{PAYMENT_DETAILS['card']}\n"
+        f"{PAYMENT_DETAILS['trc20']}\n\n"
         "📌 После оплаты:\n1. Сохраните чек\n2. Напишите менеджеру: @SwagWhite"
     )
     keyboard = [
@@ -544,8 +543,8 @@ async def process_payment(update: Update, _: ContextTypes.DEFAULT_TYPE):
 
     text = (
         f"🧾 Заказ {order_id}\n\n💰 Сумма: {total}$\n\n💳 Реквизиты:\n\n"
-        f"{PAYMENT_DETAILS['card']}\n{PAYMENT_DETAILS['bank']}\n"
-        f"{PAYMENT_DETAILS['name']}\n{PAYMENT_DETAILS['trc20']}\n\n"
+        f"{PAYMENT_DETAILS['card']}\n"
+        f"{PAYMENT_DETAILS['trc20']}\n\n"
         "📌 После оплаты нажмите кнопку ниже и отправьте скриншот менеджеру."
     )
     keyboard = [
@@ -778,8 +777,8 @@ async def referral_info(update: Update, _: ContextTypes.DEFAULT_TYPE):
         "🤝 Партнёрская программа\n"
         "Начните строить свою команду уже сегодня — все рефералы закрепляются за вами навсегда!\n\n"
         "🎁 Ваша система вознаграждений:\n"
-        "🥇 За рефералов 1-й линии: 45%\n"
-        "🥈 За рефералов 2-й линии: 15%\n\n"
+        "🥇 За рефералов 1-й линии: 10% с их покупок\n"
+        "🥈 За рефералов 2-й линии: 5% с их покупок\n\n"
         "📊 Статистика:\n"
         f"👥 Всего рефералов: {total}\n"
         f"1-я линия: {first}\n"

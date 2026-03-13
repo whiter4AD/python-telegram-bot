@@ -126,7 +126,7 @@ def get_main_keyboard():
     buttons = [
         [KeyboardButton('📋 Каталог'), KeyboardButton('🛒 Корзина')],
         [KeyboardButton('💳 Реквизиты'), KeyboardButton('❓ Помощь')],
-        [KeyboardButton('📞 Контакты'), KeyboardButton('👥 Рефералка')],
+        [KeyboardButton('📞 Контакты')],
     ]
     return ReplyKeyboardMarkup(buttons, resize_keyboard=True)
 
@@ -203,48 +203,6 @@ def get_recent_users(limit=10):
     return users
 
 
-def set_referrer(user_id: int, referrer_id: int):
-    """Фиксируем реферера только один раз и только если он не сам пользователь."""
-    if user_id == referrer_id:
-        return
-    conn = get_conn()
-    cursor = conn.cursor()
-    try:
-        cursor.execute("SELECT referrer_id FROM users WHERE user_id = %s", (user_id,))
-        current = cursor.fetchone()
-        # Если пользователь не найден или уже есть реферер — ничего не делаем
-        if not current or current[0] is not None:
-            conn.close()
-            return
-        cursor.execute(
-            "UPDATE users SET referrer_id = %s WHERE user_id = %s",
-            (referrer_id, user_id),
-        )
-        conn.commit()
-    finally:
-        conn.close()
-
-
-def get_referral_stats(user_id: int):
-    """Возвращает (рефералы 1 линии, рефералы 2 линии)."""
-    conn = get_conn()
-    cursor = conn.cursor()
-    # 1-я линия
-    cursor.execute("SELECT COUNT(*) FROM users WHERE referrer_id = %s", (user_id,))
-    first = cursor.fetchone()[0]
-    # 2-я линия
-    cursor.execute(
-        """
-        SELECT COUNT(*) FROM users
-        WHERE referrer_id IN (SELECT user_id FROM users WHERE referrer_id = %s)
-        """,
-        (user_id,),
-    )
-    second = cursor.fetchone()[0]
-    conn.close()
-    return first, second
-
-
 def block_user_db(user_id: int):
     conn = get_conn()
     cursor = conn.cursor()
@@ -301,16 +259,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if await check_blocked(update):
         return
     user = update.effective_user
-    # Обрабатываем реферальный параметр /start ref_<user_id>
-    if context.args:
-        payload = context.args[0]
-        if payload.startswith("ref_"):
-            try:
-                referrer_id = int(payload.replace("ref_", ""))
-                set_referrer(user.id, referrer_id)
-            except ValueError:
-                pass
-
     add_user_to_db(user.id, user.username, user.first_name)
 
     if user.id not in user_consent or not user_consent[user.id]:
@@ -355,8 +303,7 @@ async def help_command(update: Update, _: ContextTypes.DEFAULT_TYPE):
         "3. Добавьте в корзину\n"
         "4. /cart - проверьте корзину\n"
         "5. Оплатите и отправьте скриншот менеджеру\n\n"
-        "/contact - контакты\n"
-        "/ref - партнёрская программа и ваша реферальная ссылка"
+        "/contact - контакты"
     , reply_markup=get_main_keyboard())
 
 
@@ -762,33 +709,6 @@ async def unblock_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(f"✅ Пользователь {target_id} разблокирован.")
 
 
-async def referral_info(update: Update, _: ContextTypes.DEFAULT_TYPE):
-    """Информация по реферальной программе для пользователя."""
-    if await check_blocked(update):
-        return
-    user = update.effective_user
-    first, second = get_referral_stats(user.id)
-    total = first + second
-    link = "— недоступно, не задан BOT_USERNAME"
-    if BOT_USERNAME:
-        link = f"https://t.me/{BOT_USERNAME}?start=ref_{user.id}"
-
-    text = (
-        "🤝 Партнёрская программа\n"
-        "Начните строить свою команду уже сегодня — все рефералы закрепляются за вами навсегда!\n\n"
-        "🎁 Ваша система вознаграждений:\n"
-        "🥇 За рефералов 1-й линии: 10% с их покупок\n"
-        "🥈 За рефералов 2-й линии: 5% с их покупок\n\n"
-        "📊 Статистика:\n"
-        f"👥 Всего рефералов: {total}\n"
-        f"1-я линия: {first}\n"
-        f"2-я линия: {second}\n\n"
-        "🔗 Ваша реферальная ссылка:\n"
-        f"{link}"
-    )
-    await update.message.reply_text(text)
-
-
 async def back_to_admin(update: Update, _: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -827,7 +747,6 @@ def main():
     application.add_handler(CommandHandler("admin", admin_panel))
     application.add_handler(CommandHandler("block", block_user))
     application.add_handler(CommandHandler("unblock", unblock_user))
-    application.add_handler(CommandHandler("ref", referral_info))
     application.add_handler(CommandHandler("cancel", cancel))
 
     application.add_handler(CallbackQueryHandler(accept_terms, pattern='^accept_terms$'))
@@ -858,7 +777,6 @@ def main():
     application.add_handler(MessageHandler(filters.TEXT & filters.Regex('^💳 Реквизиты$'), show_payment_details))
     application.add_handler(MessageHandler(filters.TEXT & filters.Regex('^❓ Помощь$'), help_command))
     application.add_handler(MessageHandler(filters.TEXT & filters.Regex('^📞 Контакты$'), contact))
-    application.add_handler(MessageHandler(filters.TEXT & filters.Regex('^👥 Рефералка$'), referral_info))
     # Хендлер для сообщений, используемых в режиме рассылки (любой тип, кроме команд)
     application.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, handle_all_messages))
 

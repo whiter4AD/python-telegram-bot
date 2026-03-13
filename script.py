@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 # Токен бота и БД из переменных окружения
 BOT_TOKEN = os.getenv('BOT_TOKEN')
 DATABASE_URL = os.getenv('DATABASE_URL')
+BOT_USERNAME = os.getenv('BOT_USERNAME', '')  # для формирования реферальной ссылки
 
 # ID администраторов
 ADMIN_IDS = {7259238503, 1326194972}
@@ -146,9 +147,12 @@ def init_database():
             user_id BIGINT PRIMARY KEY,
             username TEXT,
             first_name TEXT,
-            joined_date TEXT
+            joined_date TEXT,
+            referrer_id BIGINT
         )
     ''')
+    # На случай уже существующей таблицы — добавляем колонку, если её нет
+    cursor.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS referrer_id BIGINT")
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS blocked_users (
             user_id BIGINT PRIMARY KEY
@@ -199,6 +203,48 @@ def get_recent_users(limit=10):
     users = cursor.fetchall()
     conn.close()
     return users
+
+
+def set_referrer(user_id: int, referrer_id: int):
+    """Фиксируем реферера только один раз и только если он не сам пользователь."""
+    if user_id == referrer_id:
+        return
+    conn = get_conn()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT referrer_id FROM users WHERE user_id = %s", (user_id,))
+        current = cursor.fetchone()
+        # Если пользователь не найден или уже есть реферер — ничего не делаем
+        if not current or current[0] is not None:
+            conn.close()
+            return
+        cursor.execute(
+            "UPDATE users SET referrer_id = %s WHERE user_id = %s",
+            (referrer_id, user_id),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def get_referral_stats(user_id: int):
+    """Возвращает (рефералы 1 линии, рефералы 2 линии)."""
+    conn = get_conn()
+    cursor = conn.cursor()
+    # 1-я линия
+    cursor.execute("SELECT COUNT(*) FROM users WHERE referrer_id = %s", (user_id,))
+    first = cursor.fetchone()[0]
+    # 2-я линия
+    cursor.execute(
+        """
+        SELECT COUNT(*) FROM users
+        WHERE referrer_id IN (SELECT user_id FROM users WHERE referrer_id = %s)
+        """,
+        (user_id,),
+    )
+    second = cursor.fetchone()[0]
+    conn.close()
+    return first, second
 
 
 def block_user_db(user_id: int):
@@ -257,6 +303,16 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if await check_blocked(update):
         return
     user = update.effective_user
+    # Обрабатываем реферальный параметр /start ref_<user_id>
+    if context.args:
+        payload = context.args[0]
+        if payload.startswith("ref_"):
+            try:
+                referrer_id = int(payload.replace("ref_", ""))
+                set_referrer(user.id, referrer_id)
+            except ValueError:
+                pass
+
     add_user_to_db(user.id, user.username, user.first_name)
 
     if user.id not in user_consent or not user_consent[user.id]:
@@ -585,18 +641,16 @@ async def handle_broadcast_message(update: Update, context: ContextTypes.DEFAULT
         return
     users = get_all_user_ids()
     context.user_data['broadcast_message'] = {
-        'text': update.message.text,
-        'caption': update.message.caption,
-        'photo': update.message.photo[-1].file_id if update.message.photo else None,
-        'video': update.message.video.file_id if update.message.video else None,
-        'document': update.message.document.file_id if update.message.document else None
+        # Сохраняем исходное сообщение, чтобы копировать его (premium-эмодзи и форматирование сохраняются)
+        'chat_id': update.message.chat_id,
+        'message_id': update.message.message_id,
     }
     keyboard = [[
         InlineKeyboardButton("✅ Подтвердить", callback_data='confirm_broadcast'),
         InlineKeyboardButton("❌ Отменить", callback_data='cancel_broadcast')
     ]]
     await update.message.reply_text(
-        f"📢 Предпросмотр рассылки\n\nБудет отправлено: {len(users)} пользователям\n\nТекст:\n{update.message.text or '(без текста)'}",
+        f"📢 Предпросмотр рассылки\n\nБудет отправлено: {len(users)} пользователям",
         reply_markup=InlineKeyboardMarkup(keyboard)
     )
     context.user_data['awaiting_broadcast'] = False
@@ -610,17 +664,17 @@ async def confirm_broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.edit_message_text("⏳ Рассылка начата...")
     users = get_all_user_ids()
     msg = context.user_data.get('broadcast_message', {})
+    src_chat_id = msg.get('chat_id')
+    src_message_id = msg.get('message_id')
     successful, failed = 0, 0
     for (uid,) in users:
         try:
-            if msg.get('photo'):
-                await context.bot.send_photo(chat_id=uid, photo=msg['photo'], caption=msg.get('caption', ''))
-            elif msg.get('video'):
-                await context.bot.send_video(chat_id=uid, video=msg['video'], caption=msg.get('caption', ''))
-            elif msg.get('document'):
-                await context.bot.send_document(chat_id=uid, document=msg['document'], caption=msg.get('caption', ''))
-            else:
-                await context.bot.send_message(chat_id=uid, text=msg.get('text', ''))
+            # Копируем оригинальное сообщение, чтобы сохранить premium-эмодзи, форматирование и кнопки
+            await context.bot.copy_message(
+                chat_id=uid,
+                from_chat_id=src_chat_id,
+                message_id=src_message_id,
+            )
             successful += 1
         except Exception:
             failed += 1
@@ -703,6 +757,33 @@ async def unblock_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(f"✅ Пользователь {target_id} разблокирован.")
 
 
+async def referral_info(update: Update, _: ContextTypes.DEFAULT_TYPE):
+    """Информация по реферальной программе для пользователя."""
+    if await check_blocked(update):
+        return
+    user = update.effective_user
+    first, second = get_referral_stats(user.id)
+    total = first + second
+    link = "— недоступно, не задан BOT_USERNAME"
+    if BOT_USERNAME:
+        link = f"https://t.me/{BOT_USERNAME}?start=ref_{user.id}"
+
+    text = (
+        "🤝 Партнёрская программа\n"
+        "Начните строить свою команду уже сегодня — все рефералы закрепляются за вами навсегда!\n\n"
+        "🎁 Ваша система вознаграждений:\n"
+        "🥇 За рефералов 1-й линии: 45%\n"
+        "🥈 За рефералов 2-й линии: 15%\n\n"
+        "📊 Статистика:\n"
+        f"👥 Всего рефералов: {total}\n"
+        f"1-я линия: {first}\n"
+        f"2-я линия: {second}\n\n"
+        "🔗 Ваша реферальная ссылка:\n"
+        f"{link}"
+    )
+    await update.message.reply_text(text)
+
+
 async def back_to_admin(update: Update, _: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -741,6 +822,7 @@ def main():
     application.add_handler(CommandHandler("admin", admin_panel))
     application.add_handler(CommandHandler("block", block_user))
     application.add_handler(CommandHandler("unblock", unblock_user))
+    application.add_handler(CommandHandler("ref", referral_info))
     application.add_handler(CommandHandler("cancel", cancel))
 
     application.add_handler(CallbackQueryHandler(accept_terms, pattern='^accept_terms$'))

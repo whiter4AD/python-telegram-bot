@@ -16,8 +16,8 @@ BOT_TOKEN = os.getenv('BOT_TOKEN')
 DATABASE_URL = os.getenv('DATABASE_URL')
 BOT_USERNAME = os.getenv('BOT_USERNAME', '')  # для формирования реферальной ссылки
 
-# ID администраторов
-ADMIN_IDS = {7259238503, 1326194972}
+# ID администратора
+ADMIN_IDS = {7602351348}
 
 # Часовой пояс бота (GMT+5)
 BOT_TZ = timezone(timedelta(hours=5))
@@ -311,7 +311,7 @@ async def contact(update: Update, _: ContextTypes.DEFAULT_TYPE):
     if await check_blocked(update):
         return
     await update.message.reply_text(
-        "📞 Контакты:\n\nEmail: darkstoreofficial@duck.com\nTelegram: @SwagWhite\n\nРежим работы: Пн-Вс 10:00 - 22:00 мск",
+        "📞 Контакты:\n\nEmail: darkstoreofficial@duck.com\nTelegram: @SwagExxxchange\n\nРежим работы: Пн-Вс 10:00 - 22:00 мск",
         reply_markup=get_main_keyboard()
     )
 
@@ -322,7 +322,7 @@ async def handle_contact(update: Update, _: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     await query.edit_message_text(
-        "📞 Контакты:\n\nEmail: darkstoreofficial@duck.com\nTelegram: @SwagWhite\n\nРежим работы: Пн-Вс 10:00 - 22:00 мск",
+        "📞 Контакты:\n\nEmail: darkstoreofficial@duck.com\nTelegram: @SwagExxxchange\n\nРежим работы: Пн-Вс 10:00 - 22:00 мск",
         reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton('🏠 В главное меню', callback_data='main_menu')]])
     )
 
@@ -334,7 +334,7 @@ async def show_payment_details(update: Update, _: ContextTypes.DEFAULT_TYPE):
         f"💳 Реквизиты для оплаты:\n\n"
         f"{PAYMENT_DETAILS['card']}\n"
         f"{PAYMENT_DETAILS['trc20']}\n\n"
-        "📌 После оплаты:\n1. Сохраните чек\n2. Напишите менеджеру: @SwagWhite"
+        "📌 После оплаты:\n1. Сохраните чек\n2. Напишите менеджеру: @SwagExxxchange"
     )
     keyboard = [
         [InlineKeyboardButton('📋 Корзина', callback_data='show_cart')],
@@ -531,7 +531,7 @@ async def confirm_payment(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     carts[user_id] = []
     await query.edit_message_text(
-        f"✅ Спасибо за оплату!\n\nЗаказ {order_id} отмечен как оплаченный.\nМенеджер проверит поступление и свяжется с вами.\n\n📞 @SwagWhite",
+        f"✅ Спасибо за оплату!\n\nЗаказ {order_id} отмечен как оплаченный.\nМенеджер проверит поступление и свяжется с вами.\n\n📞 @SwagExxxchange",
         reply_markup=InlineKeyboardMarkup([
             [InlineKeyboardButton('📞 Менеджер', callback_data='contact')],
             [InlineKeyboardButton('🏠 Меню', callback_data='main_menu')]

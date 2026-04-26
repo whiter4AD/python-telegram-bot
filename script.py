@@ -262,7 +262,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if user.id not in user_consent or not user_consent[user.id]:
         keyboard = [
-            [InlineKeyboardButton("📜 Прочитать условия", url="https://telegra.ph/DarkStore-11-02")],
+            [InlineKeyboardButton("📜 Прочитать условия", url="https://telegra.ph/DivineStore-04-26")],
             [InlineKeyboardButton("✅ Я принимаю условия", callback_data='accept_terms')]
         ]
         await update.message.reply_text(
@@ -310,7 +310,7 @@ async def contact(update: Update, _: ContextTypes.DEFAULT_TYPE):
     if await check_blocked(update):
         return
     await update.message.reply_text(
-        "📞 Контакты:\n\nEmail: darkstoreofficial@duck.com\nTelegram: @SwagExxxchange\n\nРежим работы: Пн-Вс 10:00 - 22:00 мск",
+        "📞 Контакты:\n\nEmail: divinestoreofficial@duck.com\nTelegram: @SwagExxxchange\n\nРежим работы: Пн-Вс 10:00 - 22:00 мск",
         reply_markup=get_main_keyboard()
     )
 
@@ -321,7 +321,7 @@ async def handle_contact(update: Update, _: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     await query.edit_message_text(
-        "📞 Контакты:\n\nEmail: darkstoreofficial@duck.com\nTelegram: @SwagExxxchange\n\nРежим работы: Пн-Вс 10:00 - 22:00 мск",
+        "📞 Контакты:\n\nEmail: divinestoreofficial@duck.com\nTelegram: @SwagExxxchange\n\nРежим работы: Пн-Вс 10:00 - 22:00 мск",
         reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton('🏠 В главное меню', callback_data='main_menu')]])
     )
 

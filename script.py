@@ -28,8 +28,7 @@ def is_admin(user_id: int) -> bool:
 
 # Реквизиты для оплаты
 PAYMENT_DETAILS = {
-    'card': '💳 Номер карты: 2204 1201 2909 5465',
-    'trc20': '🪙 trc20: TSaT6oPw8MCtcnWQGZyv9s3TMidatnUi5d',
+    'trc20': '🪙 trc20: TRQr75osx6tdhV3s9J9A3LhRrY5YRNmVgr',
 }
 
 # База данных товаров
@@ -332,7 +331,6 @@ async def show_payment_details(update: Update, _: ContextTypes.DEFAULT_TYPE):
         return
     text = (
         f"💳 Реквизиты для оплаты:\n\n"
-        f"{PAYMENT_DETAILS['card']}\n"
         f"{PAYMENT_DETAILS['trc20']}\n\n"
         "📌 После оплаты:\n1. Сохраните чек\n2. Напишите менеджеру: @SwagExxxchange"
     )
@@ -490,7 +488,6 @@ async def process_payment(update: Update, _: ContextTypes.DEFAULT_TYPE):
 
     text = (
         f"🧾 Заказ {order_id}\n\n💰 Сумма: {total}$\n\n💳 Реквизиты:\n\n"
-        f"{PAYMENT_DETAILS['card']}\n"
         f"{PAYMENT_DETAILS['trc20']}\n\n"
         "📌 После оплаты нажмите кнопку ниже и отправьте скриншот менеджеру."
     )

@@ -123,7 +123,7 @@ PRODUCTS = {
         }
     },
     '💰 Multicurrency': {   
-        'name': '💰 Мультиватютки',
+        'name': '💰 Мультивалютки',
         'items': {
             'Armenia': {'name': 'Armenia Bank', 'price': 470, 'desc': 'Международная именная карта MASTERCARD банка Армении'},
             'Armenia Signature': {'name': 'Armenia Signature Bank', 'price': 840, 'desc': 'Международная именная карта VISA банка Армении'},

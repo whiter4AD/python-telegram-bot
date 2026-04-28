@@ -71,8 +71,8 @@ PRODUCTS = {
             'eSim Turkcell/VodaFone': {'name': 'eSim', 'price': 100, 'desc': 'Turkey eSim'},
         }
     },
-    '🪙 Crypto exchanges': {
-        'name': '🪙 Верификация',
+    '🛡️ Crypto exchanges': {
+        'name': '🛡️ Верификация',
         'items': {
             'Bybit': {'name': 'Bybit 2lvl + card', 'price': 45, 'desc': 'Верификация'},
             'OKX': {'name': 'OKX', 'price': 25, 'desc': 'Верификация'},
@@ -113,6 +113,24 @@ PRODUCTS = {
             'eSim MTN': {'name': 'eSim', 'price': 30, 'desc': 'Nigeria eSim'},
         }
     },
+    '💥 Kazakhstan': {
+        'name': '💥 Казахстан',
+        'items': {
+            'Kaspi': {'name': 'Kaspi Bank', 'price': 150, 'desc': 'Карта данного банка'},
+            'Tayyab': {'name': 'Tayyab Bank', 'price': 210, 'desc': 'Карта данного банка'},
+            'Hodl': {'name': 'Hodl Bank', 'price': 350, 'desc': 'Карта данного банка'},
+            'eSim Kazakhstan': {'name': 'eSim', 'price': 30, 'desc': 'Kazakhstan eSim'},
+        }
+    }
+    '💰 Multicurrency': {   
+        'name': '💰 Мультиватютки',
+        'items': {
+            'Armenia': {'name': 'Armenia Bank', 'price': 470, 'desc': 'Международная именная карта MASTERCARD банка Армении'},
+            'Armenia Signature': {'name': 'Armenia Signature Bank', 'price': 840, 'desc': 'Международная именная карта VISA банка Армении'},
+            'Kyrgyzstan': {'name': 'Kyrgyzstan Bank', 'price': 640, 'desc': 'Международная именная карта Visa банка Кыргызстана'},
+            'KZ Global': {'name': 'KZ Global Bank', 'price': 320, 'desc': 'Набор из 3 именных VISA/MASTERCARD карт'}
+        }
+    }
 }
 
 # Корзина и заказы (в памяти)

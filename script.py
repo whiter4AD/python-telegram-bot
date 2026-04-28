@@ -121,7 +121,7 @@ PRODUCTS = {
             'Hodl': {'name': 'Hodl Bank', 'price': 350, 'desc': 'Карта данного банка'},
             'eSim Kazakhstan': {'name': 'eSim', 'price': 30, 'desc': 'Kazakhstan eSim'},
         }
-    }
+    },
     '💰 Multicurrency': {   
         'name': '💰 Мультиватютки',
         'items': {

@@ -75,14 +75,16 @@ PRODUCTS = {
         'name': '🛡️ Верификация',
         'items': {
             'Bybit': {'name': 'Bybit 2lvl + card', 'price': 45, 'desc': 'Верификация'},
-            'OKX': {'name': 'OKX', 'price': 25, 'desc': 'Верификация'},
-            'Mexc': {'name': 'Mexc', 'price': 25, 'desc': 'Верификация'},
-            'Fragment': {'name': 'Fragment', 'price': 25, 'desc': 'Верификация'},
-            'Binance': {'name': 'Binance', 'price': 25, 'desc': 'Верификация'},
-            'HTX': {'name': 'HTX', 'price': 25, 'desc': 'Верификация'},
-            'BetBoom': {'name': 'BetBoom', 'price': 25, 'desc': 'Верификация'},
+            'OKX': {'name': 'OKX', 'price': 15, 'desc': 'Верификация'},
+            'Mexc': {'name': 'Mexc', 'price': 15, 'desc': 'Верификация'},
+            'Fragment': {'name': 'Fragment', 'price': 10, 'desc': 'Верификация'},
+            'Binance': {'name': 'Binance', 'price': 15, 'desc': 'Верификация'},
+            'HTX': {'name': 'HTX', 'price': 15, 'desc': 'Верификация'},
+            'BetBoom': {'name': 'BetBoom', 'price': 10, 'desc': 'Верификация'},
             'Faceit': {'name': 'Faceit', 'price': 15, 'desc': 'Верификация'},
-            'Cryptobot': {'name': 'Cryptobot', 'price': 20, 'desc': 'Верификация'},
+            'Cryptobot': {'name': 'Cryptobot', 'price': 15, 'desc': 'Верификация'},
+            'Yoomoney': {'name': 'Yoomoney', 'price': 2, 'desc': 'Верификация'},
+            'Yandex Pay': {'name': 'Yandex Pay', 'price': 10, 'desc': 'Верификация'},
         }
     },
     '🎯 India': {

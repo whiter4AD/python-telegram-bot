@@ -17,7 +17,7 @@ DATABASE_URL = os.getenv('DATABASE_URL')
 BOT_USERNAME = os.getenv('BOT_USERNAME', '')  # для формирования реферальной ссылки
 
 # ID администратора
-ADMIN_IDS = {7602351348}
+ADMIN_IDS = {1326194972}
 
 # Часовой пояс бота (GMT+5)
 BOT_TZ = timezone(timedelta(hours=5))
@@ -28,13 +28,13 @@ def is_admin(user_id: int) -> bool:
 
 # Реквизиты для оплаты
 PAYMENT_DETAILS = {
-    'trc20': '🪙 trc20: TRQr75osx6tdhV3s9J9A3LhRrY5YRNmVgr',
+    'trc20': '🪙 trc20: TSaT6oPw8MCtcnWQGZyv9s3TMidatnUi5d',
 }
 
 # База данных товаров
 PRODUCTS = {
-    '📱 Argentina': {
-        'name': '📱 Аргентина',
+    'Argentina': {
+        'name': 'Аргентина',
         'items': {
             'Personal': {'name': 'Personal Bank', 'price': 65, 'desc': 'Карта данного банка'},
             'Ripio': {'name': 'Ripio Bank', 'price': 65, 'desc': 'Карта данного банка'},
@@ -55,8 +55,8 @@ PRODUCTS = {
             'Takenos': {'name': 'Takenos Bank', 'price': 75, 'desc': 'Карта данного банка'},
         }
     },
-    '🔥 Turkey': {
-        'name': '🔥 Турция',
+    'Turkey': {
+        'name': 'Турция',
         'items': {
             'OnMobil': {'name': 'OnMobil Bank', 'price': 135, 'desc': 'Карта данного банка'},
             'lussi Wallet': {'name': 'Luziko Bank', 'price': 90, 'desc': 'Карта данного банка'},
@@ -71,24 +71,21 @@ PRODUCTS = {
             'eSim Turkcell/VodaFone': {'name': 'eSim', 'price': 100, 'desc': 'Turkey eSim'},
         }
     },
-    '🛡️ Crypto exchanges': {
-        'name': '🛡️ Верификация',
+    '️Crypto exchanges': {
+        'name': 'Верификация',
         'items': {
-            'Bybit': {'name': 'Bybit 2lvl + card', 'price': 45, 'desc': 'Верификация'},
-            'OKX': {'name': 'OKX', 'price': 15, 'desc': 'Верификация'},
+            'Bybit': {'name': 'Bybit', 'price': 15, 'desc': 'Верификация'},
+            'Antarctic Wallet': {'name': 'Antarctic Wallet', 'price': 15, 'desc': 'Верификация'},
             'Mexc': {'name': 'Mexc', 'price': 15, 'desc': 'Верификация'},
-            'Fragment': {'name': 'Fragment', 'price': 10, 'desc': 'Верификация'},
-            'Binance': {'name': 'Binance', 'price': 15, 'desc': 'Верификация'},
-            'HTX': {'name': 'HTX', 'price': 15, 'desc': 'Верификация'},
-            'BetBoom': {'name': 'BetBoom', 'price': 10, 'desc': 'Верификация'},
-            'Faceit': {'name': 'Faceit', 'price': 15, 'desc': 'Верификация'},
+            'Fragment': {'name': 'Fragment', 'price': 6, 'desc': 'Верификация'},
+            'BetBoom': {'name': 'BetBoom', 'price': 5, 'desc': 'Верификация'},
             'Cryptobot': {'name': 'Cryptobot', 'price': 15, 'desc': 'Верификация'},
             'Yoomoney': {'name': 'Yoomoney', 'price': 2, 'desc': 'Верификация'},
-            'Yandex Pay': {'name': 'Yandex Pay', 'price': 10, 'desc': 'Верификация'},
+            'WB bank': {'name': 'WB', 'price': 2, 'desc': 'Верификация'},
         }
     },
-    '🎯 India': {
-        'name': '🎯 Индия',
+    'India': {
+        'name': 'Индия',
         'items': {
             'Slice': {'name': 'Slice Bank', 'price': 270, 'desc': 'Карта данного банка'},
             'Airtel Payment': {'name': 'Airtel Payment Bank', 'price': 185, 'desc': 'Карта данного банка'},
@@ -99,8 +96,8 @@ PRODUCTS = {
             'eSim VI/Airtel': {'name': 'eSim', 'price': 60, 'desc': 'India eSim'},
         }
     },
-    '🍩 Nigeria': {
-        'name': '🍩 Нигерия',
+    'Nigeria': {
+        'name': 'Нигерия',
         'items': {
             'Kuda': {'name': 'Kuda Bank', 'price': 50, 'desc': 'Карта данного банка'},
             'Moniepoint': {'name': 'Moniepoint Bank', 'price': 85, 'desc': 'Карта данного банка'},
@@ -115,8 +112,8 @@ PRODUCTS = {
             'eSim MTN': {'name': 'eSim', 'price': 30, 'desc': 'Nigeria eSim'},
         }
     },
-    '💥 Kazakhstan': {
-        'name': '💥 Казахстан',
+    'Kazakhstan': {
+        'name': 'Казахстан',
         'items': {
             'Kaspi': {'name': 'Kaspi Bank', 'price': 150, 'desc': 'Карта данного банка'},
             'Tayyab': {'name': 'Tayyab Bank', 'price': 210, 'desc': 'Карта данного банка'},
@@ -124,8 +121,8 @@ PRODUCTS = {
             'eSim Kazakhstan': {'name': 'eSim', 'price': 30, 'desc': 'Kazakhstan eSim'},
         }
     },
-    '💰 Multicurrency': {   
-        'name': '💰 Мультивалютки',
+    'Multicurrency': {   
+        'name': 'Мультивалютки',
         'items': {
             'Armenia': {'name': 'Armenia Bank', 'price': 470, 'desc': 'Международная именная карта MASTERCARD банка Армении'},
             'Armenia Signature': {'name': 'Armenia Signature Bank', 'price': 840, 'desc': 'Международная именная карта VISA банка Армении'},
@@ -282,7 +279,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if user.id not in user_consent or not user_consent[user.id]:
         keyboard = [
-            [InlineKeyboardButton("📜 Прочитать условия", url="https://telegra.ph/DivineStore-04-26")],
+            [InlineKeyboardButton("📜 Прочитать условия", url="https://telegra.ph/EclipseStore-06-28")],
             [InlineKeyboardButton("✅ Я принимаю условия", callback_data='accept_terms')]
         ]
         await update.message.reply_text(
@@ -330,7 +327,7 @@ async def contact(update: Update, _: ContextTypes.DEFAULT_TYPE):
     if await check_blocked(update):
         return
     await update.message.reply_text(
-        "📞 Контакты:\n\nEmail: divinestoreofficial@duck.com\nTelegram: @SwagExxxchange\n\nРежим работы: Пн-Вс 10:00 - 22:00 мск",
+        "📞 Контакты:\n\nEmail: divinestoreofficial@duck.com\nTelegram: @ruotef\n\nРежим работы: Пн-Вс 10:00 - 22:00 мск",
         reply_markup=get_main_keyboard()
     )
 
@@ -341,7 +338,7 @@ async def handle_contact(update: Update, _: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     await query.edit_message_text(
-        "📞 Контакты:\n\nEmail: divinestoreofficial@duck.com\nTelegram: @SwagExxxchange\n\nРежим работы: Пн-Вс 10:00 - 22:00 мск",
+        "📞 Контакты:\n\nEmail: eclipse.store.official@gmail.com\nTelegram: @ruotef\n\nРежим работы: Пн-Вс 10:00 - 22:00 мск",
         reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton('🏠 В главное меню', callback_data='main_menu')]])
     )
 
@@ -352,7 +349,7 @@ async def show_payment_details(update: Update, _: ContextTypes.DEFAULT_TYPE):
     text = (
         f"💳 Реквизиты для оплаты:\n\n"
         f"{PAYMENT_DETAILS['trc20']}\n\n"
-        "📌 После оплаты:\n1. Сохраните чек\n2. Напишите менеджеру: @SwagExxxchange"
+        "📌 После оплаты:\n1. Сохраните чек\n2. Напишите менеджеру: @ruotef"
     )
     keyboard = [
         [InlineKeyboardButton('📋 Корзина', callback_data='show_cart')],
@@ -548,7 +545,7 @@ async def confirm_payment(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     carts[user_id] = []
     await query.edit_message_text(
-        f"✅ Спасибо за оплату!\n\nЗаказ {order_id} отмечен как оплаченный.\nМенеджер проверит поступление и свяжется с вами.\n\n📞 @SwagExxxchange",
+        f"✅ Спасибо за оплату!\n\nЗаказ {order_id} отмечен как оплаченный.\nМенеджер проверит поступление и свяжется с вами.\n\n📞 @ruotef",
         reply_markup=InlineKeyboardMarkup([
             [InlineKeyboardButton('📞 Менеджер', callback_data='contact')],
             [InlineKeyboardButton('🏠 Меню', callback_data='main_menu')]

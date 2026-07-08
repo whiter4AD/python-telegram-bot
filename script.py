@@ -19,6 +19,15 @@ BOT_USERNAME = os.getenv('BOT_USERNAME', '')  # для формирования 
 # ID администратора
 ADMIN_IDS = {1326194972}
 
+# Пагинация списка пользователей в админке
+USERS_PER_PAGE = 15
+
+CONTACT_TEXT = (
+    "Контакты:\n\n"
+    "Telegram: @ruotef\n\n"
+    "Режим работы: Пн-Вс 10:00 - 22:00 мск"
+)
+
 # Часовой пояс бота (GMT+5)
 BOT_TZ = timezone(timedelta(hours=5))
 
@@ -28,8 +37,14 @@ def is_admin(user_id: int) -> bool:
 
 # Реквизиты для оплаты
 PAYMENT_DETAILS = {
-    'trc20': 'trc20: TSaT6oPw8MCtcnWQGZyv9s3TMidatnUi5d',
+    'trc20': 'TRC20: TSaT6oPw8MCtcnWQGZyv9s3TMidatnUi5d',
+    'ton': 'TON: UQAVvdxuPl36A-P5_WSXwOHdMBp5IpthAYDxxzYFSqxJJ1zz',
+    'bnb': 'BNB: 0x385bf24c4cab3110e8a3663fd3167188f20a3113',
 }
+
+
+def format_payment_details() -> str:
+    return '\n'.join(PAYMENT_DETAILS.values())
 
 # База данных товаров
 PRODUCTS = {
@@ -71,6 +86,19 @@ PRODUCTS = {
             'eSim Turkcell/VodaFone': {'name': 'eSim', 'price': 100, 'desc': 'Turkey eSim'},
         }
     },
+    'Crypto exchanges': {
+        'name': 'Верификация',
+        'items': {
+            'Bybit': {'name': 'Bybit', 'price': 15, 'desc': 'Верификация'},
+            'Antarctic Wallet': {'name': 'Antarctic Wallet', 'price': 15, 'desc': 'Верификация'},
+            'Mexc': {'name': 'Mexc', 'price': 15, 'desc': 'Верификация'},
+            'Fragment': {'name': 'Fragment', 'price': 6, 'desc': 'Верификация'},
+            'BetBoom': {'name': 'BetBoom', 'price': 5, 'desc': 'Верификация'},
+            'Cryptobot': {'name': 'Cryptobot', 'price': 15, 'desc': 'Верификация'},
+            'Yoomoney': {'name': 'Yoomoney', 'price': 2, 'desc': 'Верификация'},
+            'WB bank': {'name': 'WB', 'price': 2, 'desc': 'Верификация'},
+        }
+    },
     'India': {
         'name': 'Индия',
         'items': {
@@ -108,7 +136,7 @@ PRODUCTS = {
             'eSim Kazakhstan': {'name': 'eSim', 'price': 30, 'desc': 'Kazakhstan eSim'},
         }
     },
-    'Multicurrency': {   
+    'Multicurrency': {
         'name': 'Мультивалютки',
         'items': {
             'Armenia': {'name': 'Armenia Bank', 'price': 470, 'desc': 'Международная именная карта MASTERCARD банка Армении'},
@@ -197,13 +225,37 @@ def get_all_user_ids():
     return users
 
 
-def get_recent_users(limit=10):
+def get_all_users():
     conn = get_conn()
     cursor = conn.cursor()
-    cursor.execute("SELECT user_id, username, first_name, joined_date FROM users ORDER BY joined_date DESC LIMIT %s", (limit,))
+    cursor.execute(
+        "SELECT user_id, username, first_name, joined_date FROM users ORDER BY joined_date DESC"
+    )
     users = cursor.fetchall()
     conn.close()
     return users
+
+
+def format_user_entry(uid, username, first_name, joined) -> str:
+    return f"• {first_name} (@{username or 'нет'})\n  ID: {uid}\n  Дата: {joined}\n\n"
+
+
+def build_users_page_text(page: int) -> tuple[str, int, int]:
+    users = get_all_users()
+    total = len(users)
+    total_pages = max(1, (total + USERS_PER_PAGE - 1) // USERS_PER_PAGE)
+    page = max(0, min(page, total_pages - 1))
+    start = page * USERS_PER_PAGE
+    page_users = users[start:start + USERS_PER_PAGE]
+
+    text = f"Пользователи ({total} всего, стр. {page + 1}/{total_pages}):\n\n"
+    if not page_users:
+        text += "Пользователей пока нет."
+    else:
+        for uid, username, first_name, joined in page_users:
+            text += format_user_entry(uid, username, first_name, joined)
+
+    return text, page, total_pages
 
 
 def block_user_db(user_id: int):
@@ -250,9 +302,9 @@ async def check_blocked(update: Update) -> bool:
         return False
 
     if update.callback_query:
-        await update.callback_query.answer("⛔ Доступ к боту ограничен.", show_alert=True)
+        await update.callback_query.answer("Доступ к боту ограничен.", show_alert=True)
     elif update.message:
-        await update.message.reply_text("⛔ Доступ к боту ограничен.")
+        await update.message.reply_text("Доступ к боту ограничен.")
     return True
 
 
@@ -266,18 +318,18 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if user.id not in user_consent or not user_consent[user.id]:
         keyboard = [
-            [InlineKeyboardButton("📜 Прочитать условия", url="https://telegra.ph/EclipseStore-06-28")],
-            [InlineKeyboardButton("✅ Я принимаю условия", callback_data='accept_terms')]
+            [InlineKeyboardButton("Прочитать условия", url="https://telegra.ph/EclipseStore-06-28")],
+            [InlineKeyboardButton("Я принимаю условия", callback_data='accept_terms')]
         ]
         await update.message.reply_text(
-            f"👋 Привет, {user.first_name}!\n\n📜 Пожалуйста, ознакомьтесь с условиями работы по ссылке ниже.",
+            f"Привет, {user.first_name}!\n\nПожалуйста, ознакомьтесь с условиями работы по ссылке ниже.",
             reply_markup=InlineKeyboardMarkup(keyboard),
             parse_mode='Markdown'
         )
     else:
         await update.message.reply_text(
-            f"👋 Привет, {user.first_name}!\n\nДоступные команды:\n"
-            "/catalog - 📋 Каталог\n/cart - 🛒 Корзина\n/payment - 💳 Реквизиты\n/help - ❓ Помощь\n/contact - 📞 Контакты"
+            f"Привет, {user.first_name}!\n\nДоступные команды:\n"
+            "/catalog - Каталог\n/cart - Корзина\n/payment - Реквизиты\n/help - Помощь\n/contact - Контакты"
         , reply_markup=get_main_keyboard())
 
 
@@ -289,23 +341,23 @@ async def accept_terms(update: Update, _: ContextTypes.DEFAULT_TYPE):
     user = query.from_user
     user_consent[user.id] = True
     await query.edit_message_text(
-        f"✅ Условия приняты.\n\n👋 Привет, {user.first_name}!\n\n"
+        f"Условия приняты.\n\nПривет, {user.first_name}!\n\n"
         "/catalog - Каталог\n/cart - Корзина\n/payment - Реквизиты\n/help - Помощь\n/contact - Контакты"
     )
     # Отправляем отдельным сообщением главное меню с постоянной клавиатурой
-    await query.message.reply_text("🏠 Главное меню:", reply_markup=get_main_keyboard())
+    await query.message.reply_text("Главное меню:", reply_markup=get_main_keyboard())
 
 
 async def help_command(update: Update, _: ContextTypes.DEFAULT_TYPE):
     if await check_blocked(update):
         return
     await update.message.reply_text(
-        "❓ Помощь:\n\n"
-        "1. /catalog - откройте каталог товаров\n"
+        "Помощь:\n\n"
+        "1. /catalog - каталог товаров\n"
         "2. Выберите категорию и товар\n"
         "3. Добавьте в корзину\n"
-        "4. /cart - откройте корзину\n"
-        "5. Оплатите и напишите менеджеру\n\n"
+        "4. /cart - проверьте корзину\n"
+        "5. Оплатите и отправьте скриншот менеджеру\n\n"
         "/contact - контакты"
     , reply_markup=get_main_keyboard())
 
@@ -313,10 +365,7 @@ async def help_command(update: Update, _: ContextTypes.DEFAULT_TYPE):
 async def contact(update: Update, _: ContextTypes.DEFAULT_TYPE):
     if await check_blocked(update):
         return
-    await update.message.reply_text(
-        "Контакты:\n\nEmail: eclipsestore@duck.com\nTelegram: @ruotef\n\nРежим работы: Пн-Вс 10:00 - 22:00 мск",
-        reply_markup=get_main_keyboard()
-    )
+    await update.message.reply_text(CONTACT_TEXT, reply_markup=get_main_keyboard())
 
 
 async def handle_contact(update: Update, _: ContextTypes.DEFAULT_TYPE):
@@ -325,8 +374,8 @@ async def handle_contact(update: Update, _: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     await query.edit_message_text(
-        "Контакты:\n\nEmail: eclipsestore@duck.com\nTelegram: @ruotef\n\nРежим работы: Пн-Вс 10:00 - 22:00 мск",
-        reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton('🏠 В главное меню', callback_data='main_menu')]])
+        CONTACT_TEXT,
+        reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton('В главное меню', callback_data='main_menu')]])
     )
 
 
@@ -335,8 +384,8 @@ async def show_payment_details(update: Update, _: ContextTypes.DEFAULT_TYPE):
         return
     text = (
         f"Реквизиты для оплаты:\n\n"
-        f"{PAYMENT_DETAILS['trc20']}\n\n"
-        "📌 После оплаты:\n1. Сохраните чек\n2. Напишите менеджеру: @ruotef"
+        f"{format_payment_details()}\n\n"
+        "После оплаты:\n1. Сохраните чек\n2. Напишите менеджеру: @ruotef"
     )
     keyboard = [
         [InlineKeyboardButton('Корзина', callback_data='show_cart')],
@@ -353,7 +402,7 @@ async def catalog(update: Update, _: ContextTypes.DEFAULT_TYPE):
     if await check_blocked(update):
         return
     keyboard = [[InlineKeyboardButton(v['name'], callback_data=f'category_{k}')] for k, v in PRODUCTS.items()]
-    await update.message.reply_text("📋 Выберите категорию:", reply_markup=InlineKeyboardMarkup(keyboard))
+    await update.message.reply_text("Выберите категорию:", reply_markup=InlineKeyboardMarkup(keyboard))
 
 
 async def show_catalog(update: Update, _: ContextTypes.DEFAULT_TYPE):
@@ -362,7 +411,7 @@ async def show_catalog(update: Update, _: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     keyboard = [[InlineKeyboardButton(v['name'], callback_data=f'category_{k}')] for k, v in PRODUCTS.items()]
-    await query.edit_message_text("📋 Выберите категорию:", reply_markup=InlineKeyboardMarkup(keyboard))
+    await query.edit_message_text("Выберите категорию:", reply_markup=InlineKeyboardMarkup(keyboard))
 
 
 async def back_to_catalog(update: Update, _: ContextTypes.DEFAULT_TYPE):
@@ -371,7 +420,7 @@ async def back_to_catalog(update: Update, _: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     keyboard = [[InlineKeyboardButton(v['name'], callback_data=f'category_{k}')] for k, v in PRODUCTS.items()]
-    await query.edit_message_text("📋 Выберите категорию:", reply_markup=InlineKeyboardMarkup(keyboard))
+    await query.edit_message_text("Выберите категорию:", reply_markup=InlineKeyboardMarkup(keyboard))
 
 
 async def show_category(update: Update, _: ContextTypes.DEFAULT_TYPE):
@@ -385,7 +434,7 @@ async def show_category(update: Update, _: ContextTypes.DEFAULT_TYPE):
         [InlineKeyboardButton(f"{item['name']} - {item['price']}$", callback_data=f'item_{category_id}_{item_id}')]
         for item_id, item in category['items'].items()
     ]
-    keyboard.append([InlineKeyboardButton('◀️ Назад', callback_data='back_to_catalog')])
+    keyboard.append([InlineKeyboardButton('Назад', callback_data='back_to_catalog')])
     await query.edit_message_text(f"{category['name']}:\nВыберите товар:", reply_markup=InlineKeyboardMarkup(keyboard))
 
 
@@ -402,7 +451,7 @@ async def show_item(update: Update, _: ContextTypes.DEFAULT_TYPE):
         [InlineKeyboardButton('Каталог', callback_data='back_to_catalog')]
     ]
     await query.edit_message_text(
-        f"{item['name']}\n\n {item['desc']}\n Цена: {item['price']}$",
+        f"{item['name']}\n\n{item['desc']}\nЦена: {item['price']}$",
         reply_markup=InlineKeyboardMarkup(keyboard)
     )
 
@@ -418,10 +467,10 @@ async def add_to_cart(update: Update, _: ContextTypes.DEFAULT_TYPE):
         carts[user_id] = []
     carts[user_id].append({'category_id': category_id, 'item_id': item_id})
     await query.edit_message_text(
-        "✅ Товар добавлен в корзину!",
+        "Товар добавлен в корзину!",
         reply_markup=InlineKeyboardMarkup([
-            [InlineKeyboardButton('🛒 Корзина', callback_data='show_cart')],
-            [InlineKeyboardButton('📋 Продолжить', callback_data='back_to_catalog')]
+            [InlineKeyboardButton('Корзина', callback_data='show_cart')],
+            [InlineKeyboardButton('Продолжить', callback_data='back_to_catalog')]
         ])
     )
 
@@ -440,7 +489,7 @@ async def show_cart(update: Update, _: ContextTypes.DEFAULT_TYPE):
 
     if not cart_items:
         text = "Корзина пуста!"
-        keyboard = [[InlineKeyboardButton('📋 Каталог', callback_data='back_to_catalog')]]
+        keyboard = [[InlineKeyboardButton('Каталог', callback_data='back_to_catalog')]]
     else:
         total = 0
         text = "Ваша корзина:\n\n"
@@ -448,7 +497,7 @@ async def show_cart(update: Update, _: ContextTypes.DEFAULT_TYPE):
             product = PRODUCTS[item['category_id']]['items'][item['item_id']]
             text += f"{i}. {product['name']} - {product['price']}$\n"
             total += product['price']
-        text += f"\n Итого: {total}$"
+        text += f"\nИтого: {total}$"
         order_id = f"#{user_id}_{len(orders) + 1}"
         keyboard = [
             [InlineKeyboardButton('Оплатить', callback_data=f'pay_{order_id}')],
@@ -469,8 +518,8 @@ async def clear_cart(update: Update, _: ContextTypes.DEFAULT_TYPE):
     await query.answer()
     carts[query.from_user.id] = []
     await query.edit_message_text(
-        "🗑 Корзина очищена!",
-        reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton('📋 Каталог', callback_data='back_to_catalog')]])
+        "Корзина очищена!",
+        reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton('Каталог', callback_data='back_to_catalog')]])
     )
 
 
@@ -484,19 +533,19 @@ async def process_payment(update: Update, _: ContextTypes.DEFAULT_TYPE):
     cart_items = carts.get(user_id, [])
 
     if not cart_items:
-        await query.edit_message_text("❌ Корзина пуста!", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton('📋 Каталог', callback_data='back_to_catalog')]]))
+        await query.edit_message_text("Корзина пуста!", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton('Каталог', callback_data='back_to_catalog')]]))
         return
 
     total = sum(PRODUCTS[i['category_id']]['items'][i['item_id']]['price'] for i in cart_items)
     orders[order_id] = {'user_id': user_id, 'items': cart_items.copy(), 'status': 'pending', 'total_price': total}
 
     text = (
-        f"🧾 Заказ {order_id}\n\n Сумма: {total}$\n\n Реквизиты:\n\n"
-        f"{PAYMENT_DETAILS['trc20']}\n\n"
-        "📌 После оплаты нажмите кнопку ниже и отправьте скриншот менеджеру."
+        f"Заказ {order_id}\n\nСумма: {total}$\n\nРеквизиты:\n\n"
+        f"{format_payment_details()}\n\n"
+        "После оплаты нажмите кнопку ниже и отправьте скриншот менеджеру."
     )
     keyboard = [
-        [InlineKeyboardButton('✅ Я оплатил', callback_data=f'confirm_{order_id}')],
+        [InlineKeyboardButton('Я оплатил', callback_data=f'confirm_{order_id}')],
         [InlineKeyboardButton('Менеджер', callback_data='contact')],
         [InlineKeyboardButton('Каталог', callback_data='back_to_catalog')]
     ]
@@ -512,7 +561,7 @@ async def confirm_payment(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = query.from_user.id
 
     if order_id not in orders:
-        await query.edit_message_text("❌ Заказ не найден.", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton('📞 Менеджер', callback_data='contact')]]))
+        await query.edit_message_text("Заказ не найден.", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton('Менеджер', callback_data='contact')]]))
         return
 
     orders[order_id]['status'] = 'paid'
@@ -525,14 +574,14 @@ async def confirm_payment(update: Update, context: ContextTypes.DEFAULT_TYPE):
         for admin_id in ADMIN_IDS:
             await context.bot.send_message(
                 chat_id=admin_id,
-                text=f"🔔 Новая оплата!\n\nЗаказ: {order_id}\nПользователь: @{query.from_user.username} (ID: {user_id})\nСумма: {orders[order_id]['total_price']}$\n\nТовары:\n{items_text}"
+                text=f"Новая оплата!\n\nЗаказ: {order_id}\nПользователь: @{query.from_user.username} (ID: {user_id})\nСумма: {orders[order_id]['total_price']}$\n\nТовары:\n{items_text}"
             )
     except Exception:
         logger.warning("Не удалось отправить уведомление менеджеру")
 
     carts[user_id] = []
     await query.edit_message_text(
-        f"✅ Спасибо за оплату!\n\nЗаказ {order_id} отмечен как оплаченный.\nМенеджер проверит поступление и свяжется с вами.\n\n @ruotef",
+        f"Спасибо за оплату!\n\nЗаказ {order_id} отмечен как оплаченный.\nМенеджер проверит поступление и свяжется с вами.\n\n@ruotef",
         reply_markup=InlineKeyboardMarkup([
             [InlineKeyboardButton('Менеджер', callback_data='contact')],
             [InlineKeyboardButton('Меню', callback_data='main_menu')]
@@ -556,27 +605,27 @@ async def main_menu(update: Update, _: ContextTypes.DEFAULT_TYPE):
 
 async def admin_panel(update: Update, _: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id):
-        await update.message.reply_text("⛔ Нет доступа.")
+        await update.message.reply_text("Нет доступа.")
         return
     keyboard = [
-        [InlineKeyboardButton("📊 Статистика", callback_data='admin_stats')],
-        [InlineKeyboardButton("📢 Рассылка", callback_data='admin_broadcast')],
-        [InlineKeyboardButton("👥 Пользователи", callback_data='admin_users')],
-        [InlineKeyboardButton("🚫 Блокировка", callback_data='admin_block_menu')],
+        [InlineKeyboardButton("Статистика", callback_data='admin_stats')],
+        [InlineKeyboardButton("Рассылка", callback_data='admin_broadcast')],
+        [InlineKeyboardButton("Пользователи", callback_data='admin_users')],
+        [InlineKeyboardButton("Блокировка", callback_data='admin_block_menu')],
     ]
-    await update.message.reply_text("🔐 Админ панель:", reply_markup=InlineKeyboardMarkup(keyboard), parse_mode='Markdown')
+    await update.message.reply_text("Админ панель:", reply_markup=InlineKeyboardMarkup(keyboard), parse_mode='Markdown')
 
 
 async def admin_stats(update: Update, _: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     if not is_admin(query.from_user.id):
-        await query.edit_message_text("⛔ Доступ запрещен.")
+        await query.edit_message_text("Доступ запрещен.")
         return
     total = get_total_users()
     await query.edit_message_text(
-        f"📊 Статистика\n\n👥 Всего пользователей: {total}\n📅 {datetime.now(BOT_TZ).strftime('%d.%m.%Y %H:%M')}",
-        reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("◀️ Назад", callback_data='back_to_admin')]])
+        f"Статистика\n\nВсего пользователей: {total}\n{datetime.now(BOT_TZ).strftime('%d.%m.%Y %H:%M')}",
+        reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Назад", callback_data='back_to_admin')]])
     )
 
 
@@ -586,7 +635,7 @@ async def admin_broadcast_start(update: Update, context: ContextTypes.DEFAULT_TY
     if not is_admin(query.from_user.id):
         return
     context.user_data['awaiting_broadcast'] = True
-    await query.edit_message_text("📢 Режим рассылки\n\nОтправь сообщение для рассылки. Для отмены: /cancel")
+    await query.edit_message_text("Режим рассылки\n\nОтправь сообщение для рассылки. Для отмены: /cancel")
 
 
 async def handle_broadcast_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -594,16 +643,15 @@ async def handle_broadcast_message(update: Update, context: ContextTypes.DEFAULT
         return
     users = get_all_user_ids()
     context.user_data['broadcast_message'] = {
-        # Сохраняем исходное сообщение, чтобы копировать его (premium-эмодзи и форматирование сохраняются)
         'chat_id': update.message.chat_id,
         'message_id': update.message.message_id,
     }
     keyboard = [[
-        InlineKeyboardButton("✅ Подтвердить", callback_data='confirm_broadcast'),
-        InlineKeyboardButton("❌ Отменить", callback_data='cancel_broadcast')
+        InlineKeyboardButton("Подтвердить", callback_data='confirm_broadcast'),
+        InlineKeyboardButton("Отменить", callback_data='cancel_broadcast')
     ]]
     await update.message.reply_text(
-        f"📢 Предпросмотр рассылки\n\nБудет отправлено: {len(users)} пользователям",
+        f"Предпросмотр рассылки\n\nБудет отправлено: {len(users)} пользователям",
         reply_markup=InlineKeyboardMarkup(keyboard)
     )
     context.user_data['awaiting_broadcast'] = False
@@ -614,7 +662,7 @@ async def confirm_broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.answer()
     if not is_admin(query.from_user.id):
         return
-    await query.edit_message_text("⏳ Рассылка начата...")
+    await query.edit_message_text("Рассылка начата...")
     users = get_all_user_ids()
     msg = context.user_data.get('broadcast_message', {})
     src_chat_id = msg.get('chat_id')
@@ -622,7 +670,6 @@ async def confirm_broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE):
     successful, failed = 0, 0
     for (uid,) in users:
         try:
-            # Копируем оригинальное сообщение, чтобы сохранить premium-эмодзи, форматирование и кнопки
             await context.bot.copy_message(
                 chat_id=uid,
                 from_chat_id=src_chat_id,
@@ -632,8 +679,8 @@ async def confirm_broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except Exception:
             failed += 1
     await query.message.edit_text(
-        f"✅ Рассылка завершена!\n\n📊 Всего: {len(users)}\n✅ Успешно: {successful}\n❌ Ошибок: {failed}",
-        reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("◀️ Назад", callback_data='back_to_admin')]])
+        f"Рассылка завершена!\n\nВсего: {len(users)}\nУспешно: {successful}\nОшибок: {failed}",
+        reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Назад", callback_data='back_to_admin')]])
     )
 
 
@@ -642,7 +689,20 @@ async def cancel_broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.answer()
     context.user_data['awaiting_broadcast'] = False
     context.user_data['broadcast_message'] = None
-    await query.edit_message_text("❌ Рассылка отменена.")
+    await query.edit_message_text("Рассылка отменена.")
+
+
+def get_users_list_keyboard(page: int, total_pages: int) -> InlineKeyboardMarkup:
+    keyboard = []
+    nav = []
+    if page > 0:
+        nav.append(InlineKeyboardButton("Пред.", callback_data=f'admin_users_{page - 1}'))
+    if page < total_pages - 1:
+        nav.append(InlineKeyboardButton("След.", callback_data=f'admin_users_{page + 1}'))
+    if nav:
+        keyboard.append(nav)
+    keyboard.append([InlineKeyboardButton("Назад", callback_data='back_to_admin')])
+    return InlineKeyboardMarkup(keyboard)
 
 
 async def admin_users_list(update: Update, _: ContextTypes.DEFAULT_TYPE):
@@ -650,14 +710,13 @@ async def admin_users_list(update: Update, _: ContextTypes.DEFAULT_TYPE):
     await query.answer()
     if not is_admin(query.from_user.id):
         return
-    users = get_recent_users()
-    text = "👥 Последние 10 пользователей:\n\n"
-    for uid, username, first_name, joined in users:
-        text += f"• {first_name} (@{username or 'нет'})\n  ID: {uid}\n  Дата: {joined}\n\n"
-    await query.edit_message_text(
-        text,
-        reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("◀️ Назад", callback_data='back_to_admin')]])
-    )
+
+    page = 0
+    if query.data.startswith('admin_users_'):
+        page = int(query.data.rsplit('_', 1)[1])
+
+    text, page, total_pages = build_users_page_text(page)
+    await query.edit_message_text(text, reply_markup=get_users_list_keyboard(page, total_pages))
 
 
 async def admin_block_menu(update: Update, _: ContextTypes.DEFAULT_TYPE):
@@ -667,66 +726,67 @@ async def admin_block_menu(update: Update, _: ContextTypes.DEFAULT_TYPE):
     if not is_admin(query.from_user.id):
         return
     text = (
-        "🚫 Блокировка пользователей\n\n"
+        "Блокировка пользователей\n\n"
         "Используйте команды:\n"
         "/block <user_id> — заблокировать пользователя\n"
         "/unblock <user_id> — разблокировать пользователя"
     )
     await query.edit_message_text(
         text,
-        reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("◀️ Назад", callback_data='back_to_admin')]])
+        reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Назад", callback_data='back_to_admin')]])
     )
 
 
 async def block_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id):
-        await update.message.reply_text("⛔ Нет доступа.")
+        await update.message.reply_text("Нет доступа.")
         return
     if not context.args:
-        await update.message.reply_text("ℹ️ Использование: /block <user_id>")
+        await update.message.reply_text("Использование: /block <user_id>")
         return
     try:
         target_id = int(context.args[0])
     except ValueError:
-        await update.message.reply_text("❌ ID пользователя должен быть числом.")
+        await update.message.reply_text("ID пользователя должен быть числом.")
         return
     block_user_db(target_id)
-    await update.message.reply_text(f"🚫 Пользователь {target_id} заблокирован.")
+    await update.message.reply_text(f"Пользователь {target_id} заблокирован.")
 
 
 async def unblock_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id):
-        await update.message.reply_text("⛔ Нет доступа.")
+        await update.message.reply_text("Нет доступа.")
         return
     if not context.args:
-        await update.message.reply_text("ℹ️ Использование: /unblock <user_id>")
+        await update.message.reply_text("Использование: /unblock <user_id>")
         return
     try:
         target_id = int(context.args[0])
     except ValueError:
-        await update.message.reply_text("❌ ID пользователя должен быть числом.")
+        await update.message.reply_text("ID пользователя должен быть числом.")
         return
     unblock_user_db(target_id)
-    await update.message.reply_text(f"✅ Пользователь {target_id} разблокирован.")
+    await update.message.reply_text(f"Пользователь {target_id} разблокирован.")
 
 
 async def back_to_admin(update: Update, _: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     keyboard = [
-        [InlineKeyboardButton("📊 Статистика", callback_data='admin_stats')],
-        [InlineKeyboardButton("📢 Рассылка", callback_data='admin_broadcast')],
-        [InlineKeyboardButton("👥 Пользователи", callback_data='admin_users')],
+        [InlineKeyboardButton("Статистика", callback_data='admin_stats')],
+        [InlineKeyboardButton("Рассылка", callback_data='admin_broadcast')],
+        [InlineKeyboardButton("Пользователи", callback_data='admin_users')],
+        [InlineKeyboardButton("Блокировка", callback_data='admin_block_menu')],
     ]
-    await query.edit_message_text("🔐 Админ панель:", reply_markup=InlineKeyboardMarkup(keyboard))
+    await query.edit_message_text("Админ панель:", reply_markup=InlineKeyboardMarkup(keyboard))
 
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if context.user_data.get('awaiting_broadcast'):
         context.user_data['awaiting_broadcast'] = False
-        await update.message.reply_text("❌ Режим рассылки отменен.")
+        await update.message.reply_text("Режим рассылки отменен.")
     else:
-        await update.message.reply_text("❌ Нет активного действия.")
+        await update.message.reply_text("Нет активного действия.")
 
 
 async def handle_all_messages(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -767,7 +827,7 @@ def main():
     application.add_handler(CallbackQueryHandler(back_to_catalog, pattern='^back_to_catalog$'))
     application.add_handler(CallbackQueryHandler(admin_stats, pattern='^admin_stats$'))
     application.add_handler(CallbackQueryHandler(admin_broadcast_start, pattern='^admin_broadcast$'))
-    application.add_handler(CallbackQueryHandler(admin_users_list, pattern='^admin_users$'))
+    application.add_handler(CallbackQueryHandler(admin_users_list, pattern='^admin_users(_\d+)?$'))
     application.add_handler(CallbackQueryHandler(admin_block_menu, pattern='^admin_block_menu$'))
     application.add_handler(CallbackQueryHandler(confirm_broadcast, pattern='^confirm_broadcast$'))
     application.add_handler(CallbackQueryHandler(cancel_broadcast, pattern='^cancel_broadcast$'))

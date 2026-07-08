@@ -28,7 +28,7 @@ def is_admin(user_id: int) -> bool:
 
 # Реквизиты для оплаты
 PAYMENT_DETAILS = {
-    'trc20': '🪙 trc20: TSaT6oPw8MCtcnWQGZyv9s3TMidatnUi5d',
+    'trc20': 'trc20: TSaT6oPw8MCtcnWQGZyv9s3TMidatnUi5d',
 }
 
 # База данных товаров
@@ -127,9 +127,9 @@ user_consent = {}
 
 def get_main_keyboard():
     buttons = [
-        [KeyboardButton('📋 Каталог'), KeyboardButton('🛒 Корзина')],
-        [KeyboardButton('💳 Реквизиты'), KeyboardButton('❓ Помощь')],
-        [KeyboardButton('📞 Контакты')],
+        [KeyboardButton('Каталог'), KeyboardButton('Корзина')],
+        [KeyboardButton('Реквизиты'), KeyboardButton('Помощь')],
+        [KeyboardButton('Контакты')],
     ]
     return ReplyKeyboardMarkup(buttons, resize_keyboard=True)
 
@@ -290,7 +290,7 @@ async def accept_terms(update: Update, _: ContextTypes.DEFAULT_TYPE):
     user_consent[user.id] = True
     await query.edit_message_text(
         f"✅ Условия приняты.\n\n👋 Привет, {user.first_name}!\n\n"
-        "/catalog - 📋 Каталог\n/cart - 🛒 Корзина\n/payment - 💳 Реквизиты\n/help - ❓ Помощь\n/contact - 📞 Контакты"
+        "/catalog - Каталог\n/cart - Корзина\n/payment - Реквизиты\n/help - Помощь\n/contact - Контакты"
     )
     # Отправляем отдельным сообщением главное меню с постоянной клавиатурой
     await query.message.reply_text("🏠 Главное меню:", reply_markup=get_main_keyboard())
@@ -301,11 +301,11 @@ async def help_command(update: Update, _: ContextTypes.DEFAULT_TYPE):
         return
     await update.message.reply_text(
         "❓ Помощь:\n\n"
-        "1. /catalog - каталог товаров\n"
+        "1. /catalog - откройте каталог товаров\n"
         "2. Выберите категорию и товар\n"
         "3. Добавьте в корзину\n"
-        "4. /cart - проверьте корзину\n"
-        "5. Оплатите и отправьте скриншот менеджеру\n\n"
+        "4. /cart - откройте корзину\n"
+        "5. Оплатите и напишите менеджеру\n\n"
         "/contact - контакты"
     , reply_markup=get_main_keyboard())
 
@@ -314,7 +314,7 @@ async def contact(update: Update, _: ContextTypes.DEFAULT_TYPE):
     if await check_blocked(update):
         return
     await update.message.reply_text(
-        "📞 Контакты:\n\nEmail: eclipsestore@duck.com\nTelegram: @ruotef\n\nРежим работы: Пн-Вс 10:00 - 22:00 мск",
+        "Контакты:\n\nEmail: eclipsestore@duck.com\nTelegram: @ruotef\n\nРежим работы: Пн-Вс 10:00 - 22:00 мск",
         reply_markup=get_main_keyboard()
     )
 
@@ -325,7 +325,7 @@ async def handle_contact(update: Update, _: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     await query.edit_message_text(
-        "📞 Контакты:\n\nEmail: eclipsestore@duck.com\nTelegram: @ruotef\n\nРежим работы: Пн-Вс 10:00 - 22:00 мск",
+        "Контакты:\n\nEmail: eclipsestore@duck.com\nTelegram: @ruotef\n\nРежим работы: Пн-Вс 10:00 - 22:00 мск",
         reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton('🏠 В главное меню', callback_data='main_menu')]])
     )
 
@@ -334,14 +334,14 @@ async def show_payment_details(update: Update, _: ContextTypes.DEFAULT_TYPE):
     if await check_blocked(update):
         return
     text = (
-        f"💳 Реквизиты для оплаты:\n\n"
+        f"Реквизиты для оплаты:\n\n"
         f"{PAYMENT_DETAILS['trc20']}\n\n"
         "📌 После оплаты:\n1. Сохраните чек\n2. Напишите менеджеру: @ruotef"
     )
     keyboard = [
-        [InlineKeyboardButton('📋 Корзина', callback_data='show_cart')],
-        [InlineKeyboardButton('📞 Менеджер', callback_data='contact')],
-        [InlineKeyboardButton('🏠 Меню', callback_data='main_menu')]
+        [InlineKeyboardButton('Корзина', callback_data='show_cart')],
+        [InlineKeyboardButton('Менеджер', callback_data='contact')],
+        [InlineKeyboardButton('Меню', callback_data='main_menu')]
     ]
     if update.callback_query:
         await update.callback_query.edit_message_text(text, reply_markup=InlineKeyboardMarkup(keyboard))
@@ -397,12 +397,12 @@ async def show_item(update: Update, _: ContextTypes.DEFAULT_TYPE):
     _, category_id, item_id = query.data.split('_', 2)
     item = PRODUCTS[category_id]['items'][item_id]
     keyboard = [
-        [InlineKeyboardButton('🛒 Добавить в корзину', callback_data=f'add_{category_id}_{item_id}')],
-        [InlineKeyboardButton('◀️ Назад', callback_data=f'category_{category_id}')],
-        [InlineKeyboardButton('🏠 Каталог', callback_data='back_to_catalog')]
+        [InlineKeyboardButton('Добавить в корзину', callback_data=f'add_{category_id}_{item_id}')],
+        [InlineKeyboardButton('Назад', callback_data=f'category_{category_id}')],
+        [InlineKeyboardButton('Каталог', callback_data='back_to_catalog')]
     ]
     await query.edit_message_text(
-        f"{item['name']}\n\n📝 {item['desc']}\n💰 Цена: {item['price']}$",
+        f"{item['name']}\n\n {item['desc']}\n Цена: {item['price']}$",
         reply_markup=InlineKeyboardMarkup(keyboard)
     )
 
@@ -439,21 +439,21 @@ async def show_cart(update: Update, _: ContextTypes.DEFAULT_TYPE):
     cart_items = carts.get(user_id, [])
 
     if not cart_items:
-        text = "🛒 Корзина пуста!"
+        text = "Корзина пуста!"
         keyboard = [[InlineKeyboardButton('📋 Каталог', callback_data='back_to_catalog')]]
     else:
         total = 0
-        text = "🛒 Ваша корзина:\n\n"
+        text = "Ваша корзина:\n\n"
         for i, item in enumerate(cart_items, 1):
             product = PRODUCTS[item['category_id']]['items'][item['item_id']]
             text += f"{i}. {product['name']} - {product['price']}$\n"
             total += product['price']
-        text += f"\n💰 Итого: {total}$"
+        text += f"\n Итого: {total}$"
         order_id = f"#{user_id}_{len(orders) + 1}"
         keyboard = [
-            [InlineKeyboardButton('✅ Оплатить', callback_data=f'pay_{order_id}')],
-            [InlineKeyboardButton('🗑 Очистить', callback_data='clear_cart')],
-            [InlineKeyboardButton('📋 Продолжить', callback_data='back_to_catalog')]
+            [InlineKeyboardButton('Оплатить', callback_data=f'pay_{order_id}')],
+            [InlineKeyboardButton('Очистить', callback_data='clear_cart')],
+            [InlineKeyboardButton('Продолжить', callback_data='back_to_catalog')]
         ]
 
     if query:
@@ -491,14 +491,14 @@ async def process_payment(update: Update, _: ContextTypes.DEFAULT_TYPE):
     orders[order_id] = {'user_id': user_id, 'items': cart_items.copy(), 'status': 'pending', 'total_price': total}
 
     text = (
-        f"🧾 Заказ {order_id}\n\n💰 Сумма: {total}$\n\n💳 Реквизиты:\n\n"
+        f"🧾 Заказ {order_id}\n\n Сумма: {total}$\n\n Реквизиты:\n\n"
         f"{PAYMENT_DETAILS['trc20']}\n\n"
         "📌 После оплаты нажмите кнопку ниже и отправьте скриншот менеджеру."
     )
     keyboard = [
         [InlineKeyboardButton('✅ Я оплатил', callback_data=f'confirm_{order_id}')],
-        [InlineKeyboardButton('📞 Менеджер', callback_data='contact')],
-        [InlineKeyboardButton('📋 Каталог', callback_data='back_to_catalog')]
+        [InlineKeyboardButton('Менеджер', callback_data='contact')],
+        [InlineKeyboardButton('Каталог', callback_data='back_to_catalog')]
     ]
     await query.edit_message_text(text, reply_markup=InlineKeyboardMarkup(keyboard))
 
@@ -532,10 +532,10 @@ async def confirm_payment(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     carts[user_id] = []
     await query.edit_message_text(
-        f"✅ Спасибо за оплату!\n\nЗаказ {order_id} отмечен как оплаченный.\nМенеджер проверит поступление и свяжется с вами.\n\n📞 @ruotef",
+        f"✅ Спасибо за оплату!\n\nЗаказ {order_id} отмечен как оплаченный.\nМенеджер проверит поступление и свяжется с вами.\n\n @ruotef",
         reply_markup=InlineKeyboardMarkup([
-            [InlineKeyboardButton('📞 Менеджер', callback_data='contact')],
-            [InlineKeyboardButton('🏠 Меню', callback_data='main_menu')]
+            [InlineKeyboardButton('Менеджер', callback_data='contact')],
+            [InlineKeyboardButton('Меню', callback_data='main_menu')]
         ])
     )
 
@@ -546,12 +546,12 @@ async def main_menu(update: Update, _: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     keyboard = [
-        [InlineKeyboardButton('📋 Каталог', callback_data='show_catalog')],
-        [InlineKeyboardButton('🛒 Корзина', callback_data='show_cart')],
-        [InlineKeyboardButton('💳 Реквизиты', callback_data='show_payment')],
-        [InlineKeyboardButton('📞 Контакты', callback_data='contact')]
+        [InlineKeyboardButton('Каталог', callback_data='show_catalog')],
+        [InlineKeyboardButton('Корзина', callback_data='show_cart')],
+        [InlineKeyboardButton('Реквизиты', callback_data='show_payment')],
+        [InlineKeyboardButton('Контакты', callback_data='contact')]
     ]
-    await query.edit_message_text("🏠 Главное меню:", reply_markup=InlineKeyboardMarkup(keyboard))
+    await query.edit_message_text("Главное меню:", reply_markup=InlineKeyboardMarkup(keyboard))
 
 
 async def admin_panel(update: Update, _: ContextTypes.DEFAULT_TYPE):

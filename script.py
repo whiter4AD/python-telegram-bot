@@ -71,19 +71,6 @@ PRODUCTS = {
             'eSim Turkcell/VodaFone': {'name': 'eSim', 'price': 100, 'desc': 'Turkey eSim'},
         }
     },
-    '️Crypto exchanges': {
-        'name': 'Верификация',
-        'items': {
-            'Bybit': {'name': 'Bybit', 'price': 15, 'desc': 'Верификация'},
-            'Antarctic Wallet': {'name': 'Antarctic Wallet', 'price': 15, 'desc': 'Верификация'},
-            'Mexc': {'name': 'Mexc', 'price': 15, 'desc': 'Верификация'},
-            'Fragment': {'name': 'Fragment', 'price': 6, 'desc': 'Верификация'},
-            'BetBoom': {'name': 'BetBoom', 'price': 5, 'desc': 'Верификация'},
-            'Cryptobot': {'name': 'Cryptobot', 'price': 15, 'desc': 'Верификация'},
-            'Yoomoney': {'name': 'Yoomoney', 'price': 2, 'desc': 'Верификация'},
-            'WB bank': {'name': 'WB', 'price': 2, 'desc': 'Верификация'},
-        }
-    },
     'India': {
         'name': 'Индия',
         'items': {
@@ -327,7 +314,7 @@ async def contact(update: Update, _: ContextTypes.DEFAULT_TYPE):
     if await check_blocked(update):
         return
     await update.message.reply_text(
-        "📞 Контакты:\n\nEmail: divinestoreofficial@duck.com\nTelegram: @ruotef\n\nРежим работы: Пн-Вс 10:00 - 22:00 мск",
+        "📞 Контакты:\n\nEmail: eclipsestore@duck.com\nTelegram: @ruotef\n\nРежим работы: Пн-Вс 10:00 - 22:00 мск",
         reply_markup=get_main_keyboard()
     )
 
@@ -338,7 +325,7 @@ async def handle_contact(update: Update, _: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     await query.edit_message_text(
-        "📞 Контакты:\n\nEmail: eclipse.store.official@gmail.com\nTelegram: @ruotef\n\nРежим работы: Пн-Вс 10:00 - 22:00 мск",
+        "📞 Контакты:\n\nEmail: eclipsestore@duck.com\nTelegram: @ruotef\n\nРежим работы: Пн-Вс 10:00 - 22:00 мск",
         reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton('🏠 В главное меню', callback_data='main_menu')]])
     )
 

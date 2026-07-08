@@ -35,16 +35,19 @@ BOT_TZ = timezone(timedelta(hours=5))
 def is_admin(user_id: int) -> bool:
     return user_id in ADMIN_IDS
 
-# Реквизиты для оплаты
-PAYMENT_DETAILS = {
-    'trc20': 'TRC20: TSaT6oPw8MCtcnWQGZyv9s3TMidatnUi5d',
-    'ton': 'TON: UQAVvdxuPl36A-P5_WSXwOHdMBp5IpthAYDxxzYFSqxJJ1zz',
-    'bnb': 'BNB: 0x385bf24c4cab3110e8a3663fd3167188f20a3113',
-}
+# Реквизиты для оплаты: (сеть, адрес)
+PAYMENT_DETAILS = [
+    ('TRC20', 'TSaT6oPw8MCtcnWQGZyv9s3TMidatnUi5d'),
+    ('TON', 'UQAVvdxuPl36A-P5_WSXwOHdMBp5IpthAYDxxzYFSqxJJ1zz'),
+    ('BNB', '0x385bf24c4cab3110e8a3663fd3167188f20a3113'),
+]
 
 
 def format_payment_details() -> str:
-    return '\n'.join(PAYMENT_DETAILS.values())
+    blocks = []
+    for i, (network, address) in enumerate(PAYMENT_DETAILS, 1):
+        blocks.append(f"{i}. {network}\n   {address}")
+    return '\n\n'.join(blocks)
 
 # База данных товаров
 PRODUCTS = {
